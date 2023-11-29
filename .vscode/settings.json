@@ -1,0 +1,41 @@
+{
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.testing.pytestArgs": [
+    "test"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "editor.formatOnSave": true,
+  "files.autoSave": "afterDelay",
+  "window.title": "RABBIT HOLE | ${activeEditorShort}",
+  "[python]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4
+  },
+  "files.exclude": {
+    "**/__pycache__": true
+  },
+  "cSpell.words": [
+    "BGRX",
+    "copyto",
+    "dtype",
+    "ffplayer",
+    "FOURCC",
+    "frombuffer",
+    "Ilib",
+    "joblib",
+    "levelname",
+    "nbytes",
+    "ndarray",
+    "opencv",
+    "rabbitmq",
+    "rawvideo",
+    "thmbnail",
+    "timecode",
+    "vframes",
+    "videoinfo",
+    "videoreader"
+  ],
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.autoImportCompletions": true,
+}
