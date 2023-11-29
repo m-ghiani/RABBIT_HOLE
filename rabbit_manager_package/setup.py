@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="videoinfo",
+    name="rabbithole",
     version="0.1.0",
     author="Massimo Ghiani",
     author_email="m.ghiani@gmail.com",

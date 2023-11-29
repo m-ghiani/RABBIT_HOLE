@@ -28,6 +28,7 @@
     "nbytes",
     "ndarray",
     "opencv",
+    "rabbithole",
     "rabbitmq",
     "rawvideo",
     "thmbnail",
