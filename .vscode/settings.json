@@ -19,6 +19,7 @@
     "BGRX",
     "copyto",
     "dtype",
+    "fanout",
     "ffplayer",
     "FOURCC",
     "frombuffer",
@@ -33,6 +34,7 @@
     "rawvideo",
     "thmbnail",
     "timecode",
+    "tupla",
     "vframes",
     "videoinfo",
     "videoreader"
