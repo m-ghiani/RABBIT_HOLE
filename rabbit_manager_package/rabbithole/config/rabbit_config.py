@@ -1,5 +1,5 @@
 import json
-from config.config_file_manager import ConfigFileManager
+from rabbithole.config import ConfigFileManager
 
 
 class RabbitConfig:
@@ -11,6 +11,7 @@ class RabbitConfig:
         return {
             "rabbit_server": "localhost",
             "rabbit_port": 5672,
+            "rabbit_management_port": 15672,
             "rabbit_credentials": ("guest", "guest"),
             "rabbit_queues": [
                 "commands_queue",
@@ -34,6 +35,7 @@ class RabbitConfig:
             self.config_manager.save(
                 config_to_save
             )  # Crea un file di configurazione di default
+            return config_to_save
         else:
             return self.__check_config(config)
 
@@ -52,6 +54,15 @@ class RabbitConfig:
         if not isinstance(config["rabbit_port"], int) or config["rabbit_port"] <= 0:
             raise ValueError("rabbit_port deve essere un intero positivo")
 
+        if (
+            not isinstance(config["rabbit_management_port"], int)
+            or config["rabbit_management_port"] <= 0
+        ):
+            raise ValueError("rabbit_management_port deve essere un intero positivo")
+
+        if isinstance(config["rabbit_credentials"], list):
+            config["rabbit_credentials"] = tuple(config["rabbit_credentials"])
+
         if not (
             isinstance(config["rabbit_credentials"], tuple)
             and len(config["rabbit_credentials"]) == 2
@@ -60,12 +71,24 @@ class RabbitConfig:
                 "rabbit_credentials deve essere una tupla con due elementi"
             )
 
-        if not all(isinstance(queue, str) for queue in config["rabbit_queues"]):
+        if (
+            config["rabbit_queues"] is not None
+            and len(config["rabbit_queues"]) > 0
+            and not all(isinstance(queue, str) for queue in config["rabbit_queues"])
+        ):
             raise ValueError("Ogni elemento in rabbit_queues deve essere una stringa")
 
-        if not all(
-            isinstance(exchange, str) for exchange in config["rabbit_exchanges"]
+        if (
+            config["rabbit_exchanges"] is not None
+            and len(config["rabbit_exchanges"]) > 0
+            and not all(
+                isinstance(value, str)
+                for exchange in config["rabbit_exchanges"]
+                for d in config["rabbit_exchanges"]
+                for value in d.values()
+            )
         ):
+            print(config["rabbit_exchanges"])
             raise ValueError(
                 "Ogni elemento in rabbit_exchanges deve essere una stringa"
             )
@@ -74,11 +97,13 @@ class RabbitConfig:
 
     def update_config(self, new_config):
         validated_config = self.__check_config(new_config)
+        if validated_config is None:
+            return
         for key, value in validated_config.items():
             if key in self.config:
                 self.config[key] = value
 
-        self.config_file_manager.save(self.config)
+        self.config_manager.save(self.config)
 
     def get_config(self):
         return self.config

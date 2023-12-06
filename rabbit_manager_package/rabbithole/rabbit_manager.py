@@ -1,7 +1,7 @@
 import pika
 import json
 import requests
-from config import RabbitConfig
+from rabbithole.config.rabbit_config import RabbitConfig
 
 
 class RabbitManager:
@@ -32,6 +32,7 @@ class RabbitManager:
         self.config = config
         self.rabbit_server: str = config.rabbit_server
         self.rabbit_port: int = config.rabbit_port
+        self.rabbit_management_port: int = config.rabbit_management_port
         self.rabbit_credentials: tuple = config.rabbit_credentials
 
         self.on_message_callback = on_message_callback
@@ -63,7 +64,7 @@ class RabbitManager:
         return pika.BlockingConnection(self.rabbit_connection_parameters)
 
     def get_existing_queues(self) -> list:
-        url = f"http://{self.rabbit_server}:{self.management_port}/api/queues"
+        url = f"http://{self.rabbit_server}:{self.rabbit_management_port}/api/queues"
         response = requests.get(url, auth=self.rabbit_credentials)
         if response.status_code == 200:
             return [queue["name"] for queue in response.json()]
@@ -72,7 +73,7 @@ class RabbitManager:
             return []
 
     def get_existing_exchanges(self) -> list:
-        url = f"http://{self.rabbit_server}:{self.management_port}/api/exchanges"
+        url = f"http://{self.rabbit_server}:{self.rabbit_management_port}/api/exchanges"
         response = requests.get(url, auth=self.rabbit_credentials)
         if response.status_code == 200:
             return [exchange["name"] for exchange in response.json()]
@@ -99,6 +100,7 @@ class RabbitManager:
     def add_queue(self, queue):
         if queue not in self.existing_queues and queue in self.config.rabbit_queues:
             self.__channel.queue_declare(queue=queue)
+            self.existing_queues.append(queue)
             return queue
 
     def __check_exchange_dict(self, exchange) -> bool:
@@ -112,16 +114,31 @@ class RabbitManager:
     def add_exchange(self, exchange: dict) -> dict:
         if (
             self.__check_exchange_dict(exchange)
-            and exchange["name"] not in self.existing_exchanges
-            and exchange["name"] in self.config.rabbit_exchanges
+            and not any(
+                e["name"] == exchange["name"]
+                for e in self.existing_exchanges
+                if "name" in e
+            )
+            and any(
+                e["name"] == exchange["name"]
+                for e in self.config.rabbit_exchanges
+                if "name" in e
+            )
+            # and exchange["name"] not in self.existing_exchanges
+            # and exchange["name"] in self.config.rabbit_exchanges
         ):
             self.__channel.exchange_declare(
                 exchange=exchange["name"], exchange_type=exchange["type"]
             )
-        for queue in exchange["queues"]:
-            self.add_queue(queue)
-            self.__channel.queue_bind(exchange=exchange["name"], queue=queue)
-        return exchange
+            if hasattr(exchange, "queues"):
+                for queue in exchange["queues"]:
+                    self.add_queue(queue)
+                    self.__channel.queue_bind(exchange=exchange["name"], queue=queue)
+            self.existing_exchanges.append(
+                {"name": exchange["name"], "type": exchange["type"]}
+            )
+            return exchange
+        return None
 
     def start_listening(self):
         self.__channel.basic_consume(
@@ -154,3 +171,20 @@ class RabbitManager:
         self.__channel.stop_consuming()
         if self.connection:
             self.connection.close()
+
+
+if __name__ == "__main__":
+    from config import ConfigFileManager
+
+    config_manager = ConfigFileManager("config", "rabbit_config.json")
+    rabbit_config = RabbitConfig(config_manager)
+    print(rabbit_config.get_config())
+    rabbit_config.update_config({"rabbit_server": "new.server.address"})
+    print(rabbit_config.get_config())
+    rabbit_config.save_config("config/rabbit_config.json")
+    rabbit_manager = RabbitManager(
+        "test_queue",
+        "test_queue",
+        {"name": "test_exchange", "type": "fanout"},
+        rabbit_config,
+    )
