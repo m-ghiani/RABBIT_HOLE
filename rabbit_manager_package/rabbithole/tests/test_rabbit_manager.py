@@ -7,16 +7,20 @@ from rabbithole.config import RabbitConfig, ConfigFileManager
 @pytest.fixture
 def rabbit_config():
     config = RabbitConfig(ConfigFileManager("test_config", "test_config.json"))
-    config.rabbit_server = "localhost"
-    config.rabbit_port = 5672
-    config.rabbit_management_port = 15672
-    config.rabbit_credentials = ("guest", "guest")
-    config.rabbit_queues = ["test_queue"]
-    config.rabbit_exchanges = [
-        {"name": "test_exchange", "type": "fanout"},
-        {"name": "test_exchange2", "type": "fanout"},
-    ]
-    return config
+    # print(config.config)
+    # config.config.rabbit_server = "localhost"
+    # config.config.rabbit_port = 5672
+    # config.config.rabbit_management_port = 15672
+    # config.config.rabbit_credentials = ("guest", "guest")
+    config.config["rabbit_queues"].append("test_queue")
+    config.config["rabbit_exchanges"].append(
+        {"name": "test_exchange", "type": "fanout"}
+    )
+    config.config["rabbit_exchanges"].append(
+        {"name": "test_exchange2", "type": "fanout"}
+    )
+
+    return config.config
 
 
 @pytest.fixture

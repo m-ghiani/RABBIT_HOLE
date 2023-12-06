@@ -30,10 +30,10 @@ class RabbitManager:
         :param on_message_callback: Funzione callback da invocare quando viene ricevuto un messaggio.
         """
         self.config = config
-        self.rabbit_server: str = config.rabbit_server
-        self.rabbit_port: int = config.rabbit_port
-        self.rabbit_management_port: int = config.rabbit_management_port
-        self.rabbit_credentials: tuple = config.rabbit_credentials
+        self.rabbit_server: str = config["rabbit_server"]
+        self.rabbit_port: int = config["rabbit_port"]
+        self.rabbit_management_port: int = config["rabbit_management_port"]
+        self.rabbit_credentials: tuple = config["rabbit_credentials"]
 
         self.on_message_callback = on_message_callback
 
@@ -98,7 +98,7 @@ class RabbitManager:
                 self.sending_exchange = {}
 
     def add_queue(self, queue):
-        if queue not in self.existing_queues and queue in self.config.rabbit_queues:
+        if queue not in self.existing_queues and queue in self.config["rabbit_queues"]:
             self.__channel.queue_declare(queue=queue)
             self.existing_queues.append(queue)
             return queue
@@ -121,11 +121,9 @@ class RabbitManager:
             )
             and any(
                 e["name"] == exchange["name"]
-                for e in self.config.rabbit_exchanges
+                for e in self.config["rabbit_exchanges"]
                 if "name" in e
             )
-            # and exchange["name"] not in self.existing_exchanges
-            # and exchange["name"] in self.config.rabbit_exchanges
         ):
             self.__channel.exchange_declare(
                 exchange=exchange["name"], exchange_type=exchange["type"]

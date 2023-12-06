@@ -1,0 +1,30 @@
+{
+    "rabbit_server": "localhost",
+    "rabbit_port": 5672,
+    "rabbit_management_port": 15672,
+    "rabbit_credentials": [
+        "guest",
+        "guest"
+    ],
+    "rabbit_queues": [
+        "commands_queue",
+        "videoreader_queue",
+        "ndi_queue",
+        "frame_ready_queue",
+        "frame_processed_queue"
+    ],
+    "rabbit_exchanges": [
+        {
+            "name": "commands_exchange",
+            "type": "fanout"
+        },
+        {
+            "name": "frame_ready_exchange",
+            "type": "fanout"
+        },
+        {
+            "name": "frame_processed_exchange",
+            "type": "fanout"
+        }
+    ]
+}
