@@ -1,6 +1,7 @@
 import pika
 import json
 import requests
+from config import RabbitConfig
 
 
 class RabbitManager:
@@ -16,7 +17,7 @@ class RabbitManager:
         sending_queue: str,
         listening_queue: str,
         sending_exchange: dict,
-        config,
+        config: RabbitConfig,
         on_message_callback=None,
     ):
         """

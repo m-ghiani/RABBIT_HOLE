@@ -11,7 +11,7 @@ setup(
     license="MIT",
     description="Pacchetto per la comunicazione con rabbitmq",
     long_description=open("README.md").read(),
-    install_requires=["pika"],
+    install_requires=["pika>=1.3.2", "requests>=2.31.0"],
     python_requires=">=3.10",  # Specifica la versione di Python richiesta
     include_package_data=True,
     classifiers=[
@@ -30,3 +30,5 @@ setup(
         "Programming Language :: Python :: 3.12",
     ],
 )
+
+# python3.10 setup.py sdist bdist_wheel

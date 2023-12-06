@@ -5,7 +5,7 @@ from config.config_file_manager import ConfigFileManager
 class RabbitConfig:
     def __init__(self, config_manager: ConfigFileManager):
         self.config_manager = config_manager
-        self.config = self.load_or_initialize_config()
+        self.config: dict = self.load_or_initialize_config()
 
     def _default_config(self):
         return {
@@ -13,7 +13,7 @@ class RabbitConfig:
             "rabbit_port": 5672,
             "rabbit_credentials": ("guest", "guest"),
             "rabbit_queues": [
-                "ui_commands_queue",
+                "commands_queue",
                 "videoreader_queue",
                 "ndi_queue",
                 "frame_ready_queue",
