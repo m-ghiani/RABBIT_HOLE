@@ -101,7 +101,7 @@ class RabbitManager:
         if queue not in self.existing_queues and queue in self.config["rabbit_queues"]:
             self.__channel.queue_declare(queue=queue)
             self.existing_queues.append(queue)
-            return queue
+        return queue
 
     def __check_exchange_dict(self, exchange) -> bool:
         required_keys = {"name", "type", "queues"}
@@ -155,11 +155,13 @@ class RabbitManager:
     def send_message(self, message: str, to_exchange: bool = False, routing_key=""):
         if not self.connection.is_open:
             raise ConnectionError("Connection not open")
-
+        if (self.sending_queue is None or self.sending_queue == "") and not to_exchange:
+            raise ValueError("No sending queue defined")
         message = json.dumps(message)
 
         exchange = self.sending_exchange if to_exchange else ""
         routing_key = self.sending_queue if not to_exchange else routing_key
+        # routing_key = "commands_queue" if not to_exchange else routing_key
 
         self.__channel.basic_publish(
             exchange=exchange, routing_key=routing_key, body=message
