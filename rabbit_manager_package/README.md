@@ -4,7 +4,8 @@ rabbit hole è un pacchetto composto da ue librerie per l'ascolto e l'invio di m
 
 ## Installazione
 
-Per installare VideoInfo, è sufficiente eseguire il seguente comando:
+Per installare RabbitHole, è sufficiente eseguire il seguente comando:
 
 ```bash
-pip install rabbithole
+pip install gh-rabbit-hole
+```

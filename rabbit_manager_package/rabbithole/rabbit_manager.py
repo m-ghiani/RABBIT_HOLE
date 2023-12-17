@@ -29,11 +29,11 @@ class RabbitManager:
         :param config: Configurazioni del server RabbitMQ.
         :param on_message_callback: Funzione callback da invocare quando viene ricevuto un messaggio.
         """
-        self.config = config
-        self.rabbit_server: str = config["rabbit_server"]
-        self.rabbit_port: int = config["rabbit_port"]
-        self.rabbit_management_port: int = config["rabbit_management_port"]
-        self.rabbit_credentials: tuple = config["rabbit_credentials"]
+        self.config = config.config
+        self.rabbit_server: str = self.config["rabbit_server"]
+        self.rabbit_port: int = self.config["rabbit_port"]
+        self.rabbit_management_port: int = self.config["rabbit_management_port"]
+        self.rabbit_credentials: tuple = self.config["rabbit_credentials"]
 
         self.on_message_callback = on_message_callback
 
