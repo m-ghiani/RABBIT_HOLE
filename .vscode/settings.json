@@ -16,8 +16,10 @@
     "**/__pycache__": true
   },
   "cSpell.words": [
+    "amqp",
     "BGRX",
     "copyto",
+    "declareok",
     "dtype",
     "fanout",
     "ffplayer",
