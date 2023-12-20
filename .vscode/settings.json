@@ -17,6 +17,7 @@
   },
   "cSpell.words": [
     "amqp",
+    "asyncio",
     "BGRX",
     "copyto",
     "declareok",
