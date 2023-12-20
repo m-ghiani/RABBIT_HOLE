@@ -3,17 +3,17 @@
 
 ## AsyncioRabbitManager
 
-### Panoramica
+### Panoramica (AsyncioRabbitManager)
 
 `RabbitManager` è una classe Python che facilita la gestione e l'interazione con un server RabbitMQ. Fornisce funzionalità per la configurazione di code e scambi, l'invio e la ricezione di messaggi, e la gestione dinamica delle risorse su RabbitMQ.
 
-### Requisiti
+### Requisiti (AsyncioRabbitManager)
 
 - Python 3.6+
 - pika 1.1.0+
 - asyncio
 
-### Installazione
+### Installazione (AsyncioRabbitManager)
 
 Assicurati di avere Python installato sul tuo sistema. Inoltre, è necessario installare le librerie `pika` e `asyncio`. Puoi installarle usando pip:
 
@@ -21,9 +21,9 @@ Assicurati di avere Python installato sul tuo sistema. Inoltre, è necessario in
 pip install pika asyncio
 ```
 
-### Utilizzo
+### Utilizzo (AsyncioRabbitManager)
 
-#### Creazione dell'istanza `RabbitManager`
+#### Creazione dell'istanza `AsyncRabbitManager`
 
 Per utilizzare la classe `RabbitManager`, è necessario prima crearne un'istanza. L'istanza richiede i dettagli della connessione al server RabbitMQ, come l'URL AMQP, il nome della coda di invio e di ascolto, e il nome dello scambio:
 
@@ -49,7 +49,7 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(rabbit_manager.connect())
 ```
 
-#### Invio di Messaggi
+#### Invio di Messaggi (AsyncioRabbitManager)
 
 Per inviare messaggi, utilizza il metodo `send_message`. Puoi specificare se inviare il messaggio a una coda o a uno scambio:
 
@@ -60,7 +60,7 @@ routing_key = 'test_routing_key'
 loop.run_until_complete(rabbit_manager.send_message(message, routing_key=routing_key))
 ```
 
-#### Ricezione di Messaggi
+#### Ricezione di Messaggi (AsyncioRabbitManager)
 
 Per ascoltare i messaggi in arrivo, assicurati di definire una callback e di avviare il processo di ascolto:
 
@@ -72,7 +72,7 @@ rabbit_manager.on_message_callback = on_message_callback
 rabbit_manager.start_listening()
 ```
 
-#### Chiusura della Connessione
+#### Chiusura della Connessione (AsyncioRabbitManager)
 
 Per assicurare una chiusura pulita e ordinata della connessione con il server RabbitMQ, è importante chiudere correttamente la connessione e le risorse associate. La classe `RabbitManager` fornisce un metodo `close_connection` per questo scopo. Quando si chiama questo metodo, viene inviato un comando di chiusura al server RabbitMQ e vengono rilasciate tutte le risorse di rete e di sistema associate alla connessione.
 
@@ -105,17 +105,17 @@ Ricorda che è importante utilizzare `asyncio` per eseguire queste operazioni in
 
 ## RabbitManager
 
-### Panoramica
+### Panoramica (RabbitManager)
 
 La classe `RabbitManager` è progettata per facilitare la gestione e l'interazione con un server RabbitMQ. Offre funzionalità per configurare code e scambi, inviare e ricevere messaggi e gestire dinamicamente le risorse su RabbitMQ.
 
-### Requisiti
+### Requisiti (RabbitManager)
 
 - Python 3.6+
 - pika
 - requests
 
-### Installazione
+### Installazione (RabbitManager)
 
 Assicurati di avere Python installato sul tuo sistema. È inoltre necessario installare le librerie `pika` e `requests` se non sono già presenti. Queste possono essere installate usando pip:
 
@@ -123,9 +123,9 @@ Assicurati di avere Python installato sul tuo sistema. È inoltre necessario ins
 pip install pika requests
 ```
 
-### Utilizzo
+### Utilizzo (RabbitManager)
 
-#### Inizializzazione
+#### Inizializzazione (RabbitManager)
 
 Per utilizzare la classe `RabbitManager`, inizializzala con i dettagli della connessione al server RabbitMQ, come il nome della coda di invio e di ascolto, lo scambio e le configurazioni specifiche:
 
@@ -148,7 +148,7 @@ rabbit_manager = RabbitManager(
 )
 ```
 
-#### Connessione
+#### Connessione (RabbitManager)
 
 Per connetterti al server RabbitMQ e configurare le code e gli scambi:
 
@@ -156,7 +156,7 @@ Per connetterti al server RabbitMQ e configurare le code e gli scambi:
 rabbit_manager.connect()
 ```
 
-#### Invio di Messaggi
+#### Invio di Messaggi (RabbitManager)
 
 Per inviare messaggi a una coda o a uno scambio:
 
@@ -164,7 +164,7 @@ Per inviare messaggi a una coda o a uno scambio:
 rabbit_manager.send_message("Il mio messaggio", to_exchange=True, routing_key="my_routing_key")
 ```
 
-#### Ricezione di Messaggi
+#### Ricezione di Messaggi (RabbitManager)
 
 Per ascoltare i messaggi in arrivo:
 
@@ -176,7 +176,7 @@ rabbit_manager.on_message_callback = my_message_callback
 rabbit_manager.start_listening()
 ```
 
-#### Rimozione di Code o Scambi
+#### Rimozione di Code o Scambi (RabbitManager)
 
 Per rimuovere una coda o uno scambio:
 
@@ -185,7 +185,7 @@ rabbit_manager.remove_queue("my_queue")
 rabbit_manager.remove_exchange("my_exchange")
 ```
 
-#### Arresto dell'Ascolto e Chiusura della Connessione
+#### Arresto dell'Ascolto e Chiusura della Connessione (RabbitManager)
 
 Per fermare l'ascolto dei messaggi e chiudere la connessione:
 
@@ -196,23 +196,23 @@ rabbit_manager.connection.close()
 
 ## ConfigFileManager and RabbitConfig
 
-### Panoramica
+### Panoramica (Configurazione)
 
 Le classi `ConfigFileManager` e `RabbitConfig` forniscono una struttura per gestire la configurazione di un'applicazione che interagisce con RabbitMQ. `ConfigFileManager` gestisce il salvataggio e il caricamento di configurazioni da file, mentre `RabbitConfig` utilizza `ConfigFileManager` per gestire specifiche configurazioni RabbitMQ.
 
-### Requisiti
+### Requisiti (Configurazione)
 
 - Python 3.6+
 - json
 - os
 
-### Utilizzo
+### Utilizzo (Configurazione)
 
-#### ConfigFileManager
+#### ConfigFileManager (Configurazione)
 
 Questa classe gestisce file di configurazione in formato JSON. Permette di caricare, salvare e assicurarsi che la directory dei file di configurazione esista.
 
-#### Esempio di Utilizzo
+#### Esempio di Utilizzo (Configurazione)
 
 ```python
 from config_file_manager import ConfigFileManager
@@ -228,7 +228,7 @@ new_config = {"chiave": "valore"}
 config_manager.save(new_config)
 ```
 
-#### Esempio di file di config
+#### Esempio di file di config 
 
 ```json
 {
@@ -261,7 +261,7 @@ Nell'esempio le voci minime necessarie per il file di configurazione
 
 Gestisce la configurazione specifica per RabbitMQ, caricando valori predefiniti se necessario e validando i dati.
 
-#### Esempio di Utilizzo
+#### Esempio di Utilizzo (Configurazione)
 
 ```python
 from rabbit_config import RabbitConfig
