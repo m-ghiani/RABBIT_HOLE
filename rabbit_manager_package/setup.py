@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="gh-rabbit-hole",
-    version="1.0.1.1",
+    version="1.0.1.2",
     author="Massimo Ghiani",
     author_email="m.ghiani@gmail.com",
     packages=find_packages(
