@@ -102,7 +102,6 @@ Nell'esempio sopra, `manage_rabbit` è una coroutine asincrona che gestisce il c
 
 Ricorda che è importante utilizzare `asyncio` per eseguire queste operazioni in quanto la classe `RabbitManager` è progettata per funzionare in modo asincrono.
 
-
 ## RabbitManager
 
 ### Panoramica (RabbitManager)
@@ -208,11 +207,11 @@ Le classi `ConfigFileManager` e `RabbitConfig` forniscono una struttura per gest
 
 ### Utilizzo (Configurazione)
 
-#### ConfigFileManager (Configurazione)
+#### ConfigFileManager
 
 Questa classe gestisce file di configurazione in formato JSON. Permette di caricare, salvare e assicurarsi che la directory dei file di configurazione esista.
 
-#### Esempio di Utilizzo (Configurazione)
+#### Esempio di Utilizzo (ConfigFileManager)
 
 ```python
 from config_file_manager import ConfigFileManager
@@ -228,7 +227,7 @@ new_config = {"chiave": "valore"}
 config_manager.save(new_config)
 ```
 
-#### Esempio di file di config 
+#### Esempio di file di config
 
 ```json
 {
