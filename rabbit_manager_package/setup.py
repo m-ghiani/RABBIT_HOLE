@@ -4,14 +4,14 @@ long_description = open("README.rst").read()
 
 setup(
     name="gh-rabbit-hole",
-    version="1.0.2",
+    version="1.5.1",
     author="Massimo Ghiani",
     author_email="m.ghiani@gmail.com",
     packages=find_packages(
         exclude=["*.tests", "*.tests.*", "tests.*", "tests", "main.py", ".vscode"]
     ),
     license="MIT",
-    description="Pacchetto per la comunicazione con rabbitmq",
+    description="Package for communication with RabbitMQ",
     long_description=long_description,
     long_description_content_type="text/x-rst",
     install_requires=["pika>=1.3.2", "requests>=2.31.0", "asyncio>=3.4.3"],

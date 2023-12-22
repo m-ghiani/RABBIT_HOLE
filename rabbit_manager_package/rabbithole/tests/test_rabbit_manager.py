@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from rabbit_manager import RabbitManager
+from repo_old_classes.rabbit_manager import RabbitManager
 from rabbithole.config import RabbitConfig, ConfigFileManager
 
 

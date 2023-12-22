@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>rabbithole.config.asyncio_rabbit_config &#8212; Rabbit Hole 1.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=362ab14a" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/nature.css?v=601dbdee" />
+    <script src="../../../_static/documentation_options.js?v=aaadad1f"></script>
+    <script src="../../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Rabbit Hole 1.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rabbithole.config.asyncio_rabbit_config</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for rabbithole.config.asyncio_rabbit_config</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">rabbithole.config</span> <span class="kn">import</span> <span class="n">ConfigFileManager</span>
+
+<span class="n">DEFAULT_CONFIG</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;amqp_url&quot;</span><span class="p">:</span> <span class="s2">&quot;amqp://guest:guest@localhost:5672/&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sending_queue&quot;</span><span class="p">:</span> <span class="s2">&quot;my_sending_queue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;listening_queue&quot;</span><span class="p">:</span> <span class="s2">&quot;my_listening_queue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sending_exchange&quot;</span><span class="p">:</span> <span class="s2">&quot;my_exchange&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;reconnect_delay&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="s2">&quot;max_reconnect_attempts&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">REQUIRED_KEYS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="s1">&#39;amqp_url&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="s1">&#39;sending_queue&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="s1">&#39;listening_queue&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="s1">&#39;sending_exchange&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="s1">&#39;reconnect_delay&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="s1">&#39;max_reconnect_attempts&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">}</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="RabbitConfig">
+<a class="viewcode-back" href="../../../rabbithole.config.html#rabbithole.config.asyncio_rabbit_config.RabbitConfig">[docs]</a>
+<span class="k">class</span> <span class="nc">RabbitConfig</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">config_file_manager</span><span class="p">:</span> <span class="n">ConfigFileManager</span> <span class="o">=</span> <span class="n">ConfigFileManager</span><span class="p">(</span><span class="s2">&quot;app_config&quot;</span><span class="p">,</span> <span class="s2">&quot;config.json&quot;</span><span class="p">),</span>
+        <span class="n">required_keys</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">REQUIRED_KEYS</span><span class="p">,</span>
+        <span class="n">default_config</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">DEFAULT_CONFIG</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_file_manager</span> <span class="o">=</span> <span class="n">config_file_manager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_or_initialize_config</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_config</span> <span class="o">=</span> <span class="n">default_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__required_keys</span> <span class="o">=</span> <span class="n">required_keys</span>
+
+<div class="viewcode-block" id="RabbitConfig.load_or_initialize_config">
+<a class="viewcode-back" href="../../../rabbithole.config.html#rabbithole.config.asyncio_rabbit_config.RabbitConfig.load_or_initialize_config">[docs]</a>
+    <span class="k">def</span> <span class="nf">load_or_initialize_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_file_manager</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># Se il file di configurazione non esiste o è vuoto</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_config</span>
+            <span class="n">config_to_save</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__check_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config_file_manager</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
+                <span class="n">config_to_save</span>
+            <span class="p">)</span>  <span class="c1"># Crea un file di configurazione di default</span>
+            <span class="k">return</span> <span class="n">config_to_save</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__check_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">__check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_config</span>
+
+        <span class="k">for</span> <span class="n">required</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__required_keys</span><span class="p">:</span>
+            <span class="n">key</span><span class="p">,</span> <span class="n">required_type</span> <span class="o">=</span> <span class="n">required</span><span class="p">[</span><span class="s2">&quot;key&quot;</span><span class="p">],</span> <span class="n">required</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span>
+
+            <span class="c1"># Verifica la presenza della chiave</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">default</span><span class="p">:</span>
+                    <span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">default</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;La chiave di configurazione obbligatoria &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; manca.&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="c1"># Verifica il tipo della chiave</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">required_type</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;La chiave &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; deve essere di tipo </span><span class="si">{</span><span class="n">required_type</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">config</span>
+
+<div class="viewcode-block" id="RabbitConfig.update_config">
+<a class="viewcode-back" href="../../../rabbithole.config.html#rabbithole.config.asyncio_rabbit_config.RabbitConfig.update_config">[docs]</a>
+    <span class="k">def</span> <span class="nf">update_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_config</span><span class="p">):</span>
+        <span class="n">validated_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__check_config</span><span class="p">(</span><span class="n">new_config</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">validated_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">validated_config</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_file_manager</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RabbitConfig.get_config">
+<a class="viewcode-back" href="../../../rabbithole.config.html#rabbithole.config.asyncio_rabbit_config.RabbitConfig.get_config">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span></div>
+
+
+<div class="viewcode-block" id="RabbitConfig.save_config">
+<a class="viewcode-back" href="../../../rabbithole.config.html#rabbithole.config.asyncio_rabbit_config.RabbitConfig.save_config">[docs]</a>
+    <span class="k">def</span> <span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_path</span><span class="p">):</span>
+        <span class="c1"># Prima di salvare, converti il valore del font in una stringa</span>
+        <span class="n">save_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">config_file</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">save_config</span><span class="p">,</span> <span class="n">config_file</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Rabbit Hole 1.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rabbithole.config.asyncio_rabbit_config</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2023-2024, Massimo Ghiani.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>

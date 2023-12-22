@@ -43,7 +43,8 @@
     "tupla",
     "vframes",
     "videoinfo",
-    "videoreader"
+    "videoreader",
+    "viewcode"
   ],
   "python.analysis.typeCheckingMode": "off",
   "python.analysis.autoImportCompletions": true,

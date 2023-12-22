@@ -3,150 +3,266 @@ import pika
 import json
 import logging
 from pika.adapters.asyncio_connection import AsyncioConnection
+from rabbithole.rabbit_log_messages import RabbitLogMessages
+from rabbithole.config import RabbitConfig
 
 
 class AsyncioRabbitManager:
     """
-    La classe AsyncioRabbitManager fornisce un'interfaccia asincrona per connettersi e interagire
-    con RabbitMQ utilizzando Python e asyncio. Progettata per applicazioni che richiedono un'elaborazione
-    reattiva e non bloccante, questa classe gestisce la connessione a RabbitMQ, l'invio e la ricezione di messaggi,
-    e la dichiarazione di scambi e code, tutto in modo asincrono.
+    The AsyncioRabbitManager class provides an asynchronous interface to connect and interact with RabbitMQ
+    using Python and asyncio. Designed for applications that require responsive, non-blocking processing,
+    this class handles connecting to RabbitMQ, sending and receiving messages, and declaring exchanges and queues, all asynchronously.
 
-    Principali caratteristiche:
-    - Connessione Asincrona: Stabilisce connessioni non bloccanti a RabbitMQ, permettendo al resto dell'applicazione
-      di continuare l'esecuzione mentre gestisce le operazioni di rete in background.
-    - Gestione dei Canali: Apertura e configurazione dei canali RabbitMQ per inviare e ricevere messaggi.
-    - Invio e Ricezione di Messaggi: Supporta l'invio di messaggi a code o scambi e la configurazione di callback
-      asincrone per la gestione di messaggi in arrivo.
-    - Integrazione con Asyncio: Costruita attorno alle primitive di asyncio, facilita l'integrazione con altre
-      operazioni asincrone e il loop di eventi.
-    - Logging Avanzato: Utilizza un sistema di logging personalizzabile per monitorare le attività e diagnosticare
-      rapidamente eventuali problemi.
+    Key Features:
+    - Asynchronous Connection: Establishes non-blocking connections to RabbitMQ, allowing the rest of the application
+      to continue execution while it handles network operations in the background.
+    - Channel Management: Opens and configures RabbitMQ channels to send and receive messages.
+    - Sending and Receiving Messages: Supports sending messages to queues or exchanges and configuring asynchronous callbacks
+      for handling incoming messages.
+    - Integration with Asyncio: Built around asyncio primitives, it facilitates integration with other
+      asynchronous operations and the event loop.
+    - Advanced Logging: Uses a customizable logging system to monitor activities and quickly diagnose
+      any problems.
 
-    Utilizzo:
-    Ideale per applicazioni basate su asyncio che richiedono una comunicazione efficace e asincrona con RabbitMQ.
-    È particolarmente utile in contesti in cui le prestazioni e la reattività sono critiche, come nei microservizi,
-    nei bot, o in sistemi di elaborazione di dati in tempo reale.
+    Usage:
+    Ideal for asyncio-based applications that require efficient, asynchronous communication with RabbitMQ.
+    It is especially useful in contexts where performance and responsiveness are critical, such as in microservices,
+    in bots or real-time data processing systems.
+
+    Properties:
+    - amqp_url (str): URL for connecting to RabbitMQ.
+    - sending_queue (str): Name of the queue for sending messages.
+    - listening_queue (str): Name of the queue for receiving messages.
+    - sending_exchange (str): Name of the exchange used to send messages.
+    - reconnect_delay (int): Time to wait before attempting to reconnect.
+    - max_reconnect_attempts (int): Maximum number of reconnect attempts.
+
+    Public Methods:
+    - connect(): Establishes an asynchronous connection with RabbitMQ and prepares the channel and exchange.
+    - attempt_reconnect(): Attempts to reconnect to RabbitMQ if the connection is lost.
+    - send_message(message, routing_key="", to_exchange=False): Sends a message to RabbitMQ.
+    - close_connection(): Closes the connection to RabbitMQ asynchronously.
+    - close_resources(): Gently closes the channel and connection.
+
+    Callbacks:
+    - on_message_callback: Asynchronous callback invoked on receipt of a message.
 
     Args:
-        amqp_url (str): URL per la connessione a RabbitMQ.
-        sending_queue (str): Nome della coda per l'invio dei messaggi.
-        listening_queue (str): Nome della coda per la ricezione dei messaggi.
-        sending_exchange (str): Nome dello scambio usato per inviare i messaggi.
-        logger (logging.Logger): Logger per registrare attività e errori.
-        on_message_callback (Callable, optional): Callback asincrona invocata alla ricezione di un messaggio.
+        rabbit_config (RabbitConfig): Configuration object for RabbitMQ.
+        logger (logging.Logger): Logger for logging activities and errors.
+        log_level (str, optional): Log level. Defaults to "INFO".
+        on_message_callback (Callable, optional): Asynchronous callback invoked when a message is received.
     """
 
     def __init__(
         self,
-        amqp_url: str,
-        sending_queue: str,
-        listening_queue: str,
-        sending_exchange: str,
+        rabbit_config: RabbitConfig,
         logger: logging.Logger,
+        log_level: str = "INFO",
         on_message_callback=None,
     ):
-        self.amqp_url = amqp_url
-        self.sending_queue = sending_queue
-        self.listening_queue = listening_queue
-        self.sending_exchange = sending_exchange
+        self.__init_configuration(rabbit_config.config)
+        self.__init_logger(logger, log_level)
         self.on_message_callback = on_message_callback
-        self.logger = logger
-        self.connection = None
-        self.channel: pika.channel.Channel = None
+        self.__connection: AsyncioConnection = None
+        self.__reconnect_attempts: int = 0
+        self.__is_connected: bool = False
+        self.__should_reconnect: bool = True
+        self.__channel: pika.channel.Channel = None
         self.__connection_opened_event = asyncio.Event()
         self.__channel_opened_event = asyncio.Event()
         self.__sending_queue_declared_event = asyncio.Event()
         self.__listening_queue_declared_event = asyncio.Event()
         self.__exchange_declared_event = asyncio.Event()
 
+    def __init_logger(self, logger: logging.Logger, log_level: str):
+        self.__logger = logger or logging.getLogger(__name__)
+        self.__logger.setLevel(getattr(logging, log_level, logging.INFO))
+        self.__logger.info(RabbitLogMessages.INIT_MANAGER)
+
+    def __init_configuration(self, config: dict):
+        self.amqp_url: str = config.get("amqp_url")
+        self.sending_queue: str = config.get("sending_queue")
+        self.listening_queue: str = config.get("listening_queue")
+        self.sending_exchange: str = config.get("sending_exchange")
+        self.reconnect_delay: int = int(config.get("reconnect_delay", 5))
+        self.max_reconnect_attempts: int = int(config.get("max_reconnect_attempts", 3))
+
+    def __del__(self):
+        """
+        Distruttore della classe. Chiama la pulizia delle risorse.
+        """
+        asyncio.run(self.close_resources())
+
     async def connect(self):
         """
-        Stabilisce una connessione asincrona con RabbitMQ e prepara il canale e lo scambio.
+        Establishes an asynchronous connection with RabbitMQ and prepares the channel and exchange.
         """
-        connection_parameters = pika.URLParameters(self.amqp_url)
-        self.connection: AsyncioConnection = AsyncioConnection(
-            parameters=connection_parameters,
-            on_open_callback=self.on_connection_open,
-            on_open_error_callback=self.on_connection_open_error,
-        )
-        await self.__connection_opened_event.wait()
-        await self.__channel_opened_event.wait()
-        await self.__sending_queue_declared_event.wait()
-        await self.__listening_queue_declared_event.wait()
-        await self.__exchange_declared_event.wait()
-        # self.__connection_opened_event.clear()
+        try:
+            self.__should_reconnect = True
+            connection_parameters = pika.URLParameters(self.amqp_url)
+            self.__connection: AsyncioConnection = AsyncioConnection(
+                parameters=connection_parameters,
+                on_open_callback=self.on_connection_open,
+                on_open_error_callback=self.on_connection_open_error,
+                on_close_callback=self.on_connection_closed,
+            )
+            await self.__connection_opened_event.wait()
+            await self.__channel_opened_event.wait()
+            await self.__sending_queue_declared_event.wait()
+            await self.__listening_queue_declared_event.wait()
+            await self.__exchange_declared_event.wait()
+            # self.__connection_opened_event.clear()
+        except pika.exceptions.AMQPConnectionError as e:
+            self.__logger.error(
+                f"{RabbitLogMessages.CONNECTION_FAILED} AMQPConnectionError: {e}"
+            )
+        except asyncio.TimeoutError as e:
+            self.__logger.error(
+                f"{RabbitLogMessages.CONNECTION_FAILED} TimeoutError: {e}"
+            )
+        except Exception as e:
+            self.__logger.error(RabbitLogMessages.CONNECTION_FAILED.format(e))
+
+    async def attempt_reconnect(self):
+        while (
+            not self.__is_connected
+            and self.__reconnect_attempts < self.max_reconnect_attempts
+            and self.__should_reconnect
+        ):
+            self.__reconnect_attempts += 1
+            self.__logger.info(
+                RabbitLogMessages.ATTEMPT_RECONNECT.format(
+                    self.__reconnect_attempts,
+                    self.max_reconnect_attempts,
+                    self.reconnect_delay,
+                )
+            )
+            await asyncio.sleep(self.reconnect_delay)
+            await self.connect()
+
+        if not self.__is_connected:
+            self.__logger.error(
+                RabbitLogMessages.MAX_RECONNECT_ATTEMPTS_REACHED.format(
+                    self.max_reconnect_attempts
+                )
+            )
 
     def on_connection_open(self, connection):
         """
-        Callback invocata quando la connessione a RabbitMQ viene aperta.
+        Callback invoked when the connection to RabbitMQ is opened.
 
         Args:
-            connection: Connessione a RabbitMQ.
+            connection: Connection to RabbitMQ.
         """
-        self.logger.info("Connection opened")
-        self.connection.channel(on_open_callback=self.on_channel_open)
+        self.__logger.info(RabbitLogMessages.CONNECTION_OPENED)
+        self.__logger.debug(
+            RabbitLogMessages.CONNECTION_OPENED_DEBUG.format(connection)
+        )
+        self.__connection.channel(on_open_callback=self.on_channel_open)
         self.__connection_opened_event.set()
+        self.__is_connected = True
+        self.__reconnect_attempts = 0
 
-        # self.__channel_opened_event.clear()
+    def on_connection_closed(self, connection, reason):
+        """
+        Callback invoked when the connection to RabbitMQ is closed.
+
+        Args:
+            connection: Connection to RabbitMQ.
+            reason: Reason for closing the connection.
+        """
+        self.__logger.info(RabbitLogMessages.CONNECTION_CLOSED.format(reason))
+        self.__logger.debug(
+            RabbitLogMessages.CONNECTION_CLOSED_DEBUG.format(connection)
+        )
+
+        self.__is_connected = False
+        asyncio.create_task(self.attempt_reconnect())
+        asyncio.create_task(self.close_resources())
 
     def on_connection_open_error(self, connection, error):
         """
-        Callback invocata in caso di errore durante l'apertura della connessione.
+        Callback invoked in case of an error during connection opening.
 
         Args:
-            connection: Connessione a RabbitMQ.
-            error: Oggetto errore che descrive il problema riscontrato.
+            connection: Connection to RabbitMQ.
+            error: Error object describing the encountered issue.
         """
-        self.logger.error("Connection open error: %s", error)
+        self.__logger.error(RabbitLogMessages.CONNECTION_OPEN_ERROR.format(error))
+        self.__logger.debug(
+            RabbitLogMessages.CONNECTION_OPEN_ERROR_DEBUG.format(connection, error)
+        )
+        self.__is_connected = False
         self.__connection_opened_event.set()
+        self.__should_reconnect = False
+        asyncio.create_task(self.attempt_reconnect())
 
     def on_channel_open(self, channel):
         """
-        Callback invocata quando un canale RabbitMQ viene aperto.
+        Callback invoked when a RabbitMQ channel is opened.
 
         Args:
-            channel: Canale RabbitMQ aperto.
+            channel: Opened RabbitMQ channel.
         """
-        self.logger.info("Channel opened")
-        self.channel: pika.channel.Channel = channel
-        self.channel.exchange_declare(
-            exchange=self.sending_exchange,
-            exchange_type="direct",
-            callback=self.on_exchange_declareok,
-        )
-        self.channel.queue_declare(
-            queue=self.sending_queue,
-            callback=self.on_sending_queue_declareok,
-            durable=True,
-        )
-        self.channel.queue_declare(
-            queue=self.listening_queue,
-            callback=self.on_listening_queue_declareok,
-            durable=True,
-        )
-        self.__channel_opened_event.set()
+        try:
+            self.__logger.info(RabbitLogMessages.CHANNEL_OPENED)
+            self.__logger.debug(RabbitLogMessages.CHANNEL_OPENED_DEBUG.format(channel))
+            self.__channel: pika.channel.Channel = channel
+            self.__channel.exchange_declare(
+                exchange=self.sending_exchange,
+                exchange_type="direct",
+                callback=self.on_exchange_declareok,
+            )
+            self.__channel.queue_declare(
+                queue=self.sending_queue,
+                callback=self.on_sending_queue_declareok,
+                durable=True,
+            )
+            self.__channel.queue_declare(
+                queue=self.listening_queue,
+                callback=self.on_listening_queue_declareok,
+                durable=True,
+            )
+            self.__channel_opened_event.set()
+        except pika.exceptions.ChannelError as e:
+            self.__logger.error(RabbitLogMessages.CHANNEL_OPEN_ERROR.format(e))
+            self.__logger.debug(
+                RabbitLogMessages.CHANNEL_OPEN_ERROR_DEBUG.format(channel, e)
+            )
+        except Exception as e:
+            self.__logger.error(RabbitLogMessages.GENERIC_ERROR.format(e))
 
     def on_exchange_declareok(self, frame):
         """
-        Callback invocata dopo la dichiarazione dello scambio.
+        Callback invoked after the exchange declaration.
 
         Args:
-            frame: Frame di risposta di RabbitMQ.
+            frame: RabbitMQ response frame.
         """
-        self.logger.info(f"[x] {self.sending_exchange} declared")
+        self.__logger.info(
+            RabbitLogMessages.QUEUE_DECLARED.format(self.sending_exchange)
+        )
+        self.__logger.debug(
+            RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.send_message, frame)
+        )
         self.__exchange_declared_event.set()
 
     def on_listening_queue_declareok(self, frame):
         """
-        Callback invocata dopo la dichiarazione della coda di ascolto.
+        Callback invoked after the listening queue declaration.
 
         Args:
-            frame: Frame di risposta di RabbitMQ.
+            frame: RabbitMQ response frame.
         """
-        self.logger.info(f"[x] {self.listening_queue} declared")
+        self.__logger.info(
+            RabbitLogMessages.QUEUE_DECLARED.format(self.listening_queue)
+        )
+        self.__logger.debug(
+            RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.listening_queue, frame)
+        )
         if self.listening_queue:
-            self.channel.basic_consume(
+            self.__channel.basic_consume(
                 queue=self.listening_queue,
                 on_message_callback=self.on_message_wrapper,
                 auto_ack=True,
@@ -155,76 +271,129 @@ class AsyncioRabbitManager:
 
     def on_sending_queue_declareok(self, frame):
         """
-        Callback invocata dopo la dichiarazione della coda di invio.
+        Callback invoked after the sending queue declaration.
 
         Args:
-            frame: Frame di risposta di RabbitMQ.
+            frame: RabbitMQ response frame.
         """
-        self.logger.info(f"[x] {self.sending_queue} declared")
+        self.__logger.info(RabbitLogMessages.QUEUE_DECLARED.format(self.sending_queue))
+        self.__logger.debug(
+            RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.sending_queue, frame)
+        )
         self.__sending_queue_declared_event.set()
 
     def on_message_wrapper(self, channel, method, properties, body):
         """
-        Wrapper per la callback on_message, crea un task asincrono.
+        Wrapper for the on_message callback, creates an asynchronous task.
 
         Args:
-            channel: Canale RabbitMQ.
-            method: Metodo di messaggistica RabbitMQ.
-            properties: Proprietà del messaggio RabbitMQ.
-            body: Corpo del messaggio.
+            channel: RabbitMQ channel.
+            method: RabbitMQ messaging method.
+            properties: RabbitMQ message properties.
+            body: Message body.
         """
         asyncio.create_task(self.on_message(channel, method, properties, body))
 
     async def on_message(self, channel, method, properties, body):
         """
-        Callback asincrona per la gestione dei messaggi ricevuti.
+        Asynchronous callback for handling received messages.
 
         Args:
-            channel: Canale RabbitMQ.
-            method: Metodo di messaggistica RabbitMQ.
-            properties: Proprietà del messaggio RabbitMQ.
-            body: Corpo del messaggio.
+            channel: RabbitMQ channel.
+            method: RabbitMQ messaging method.
+            properties: RabbitMQ message properties.
+            body: Message body.
         """
-        if self.on_message_callback:
-            await self.on_message_callback(channel, method, properties, body)
-        else:
-            self.logger.info(f"Received message: {body} on channel: {channel}")
+        try:
+            if self.on_message_callback:
+                await self.on_message_callback(channel, method, properties, body)
+            else:
+                self.__logger.info(
+                    RabbitLogMessages.MESSAGE_RECEIVED.format(body, channel)
+                )
+                self.__logger.debug(
+                    RabbitLogMessages.MESSAGE_RECEIVED_DEBUG.format(
+                        body, channel, method, properties
+                    )
+                )
+        except Exception as e:
+            self.__logger.error(RabbitLogMessages.MESSAGE_PROCESSING_ERROR.format(e))
+            self.__logger.debug(
+                RabbitLogMessages.MESSAGE_PROCESSING_ERROR_DEBUG.format(
+                    body, channel, method, properties, e
+                )
+            )
 
     def send_message(self, message, routing_key="", to_exchange=False):
         """
-        Invia un messaggio a RabbitMQ.
+        Sends a message to RabbitMQ.
 
         Args:
-            message: Il messaggio da inviare.
-            routing_key (str, optional): Chiave di routing per il messaggio.
-            to_exchange (bool, optional): Se inviare il messaggio allo scambio.
+            message: The message to send.
+            routing_key (str, optional): Routing key for the message.
+            to_exchange (bool, optional): Whether to send the message to the exchange.
         """
-        if not self.connection or not self.connection.is_open:
-            raise ConnectionError("Connection not open")
-        message = json.dumps(message)
-        routing_key = (
-            self.sending_queue
-            if routing_key is None or routing_key == ""
-            else routing_key
-        )
-        properties = pika.BasicProperties(
-            app_id="rabbit-hole", content_type="application/json"
-        )
-        exchange = self.sending_exchange if to_exchange else ""
-        self.channel.basic_publish(
-            exchange=exchange,
-            routing_key=routing_key,
-            body=message,
-            properties=properties,
-        )
-        self.logger.info("Message sent to %s: %s", routing_key, message)
+        try:
+            if not self.__connection or not self.__connection.is_open:
+                raise ConnectionError(RabbitLogMessages.CONNECTION_NOT_OPENED)
+            if not self.__channel or not self.__channel.is_open:
+                raise ConnectionError(RabbitLogMessages.CHANNEL_NOT_OPENED)
+            if not self.__is_connected:
+                raise ConnectionError(RabbitLogMessages.CONNECTION_NOT_ESTABLISHED)
+            message = json.dumps(message)
+            routing_key = (
+                self.sending_queue
+                if routing_key is None or routing_key == ""
+                else routing_key
+            )
+            properties = pika.BasicProperties(
+                app_id="rabbit-hole", content_type="application/json"
+            )
+            exchange = self.sending_exchange if to_exchange else ""
+            self.__channel.basic_publish(
+                exchange=exchange,
+                routing_key=routing_key,
+                body=message,
+                properties=properties,
+            )
+            self.__logger.info(
+                RabbitLogMessages.MESSAGE_SENT.format(message, routing_key)
+            )
+        except Exception as e:
+            self.__logger.error(RabbitLogMessages.MESSAGE_SENDING_ERROR.format(e))
+            self.__logger.debug(
+                RabbitLogMessages.MESSAGE_SENDING_ERROR_DEBUG.format(
+                    message, routing_key, e
+                )
+            )
 
     async def close_connection(self):
         """
-        Chiude la connessione con RabbitMQ in modo asincrono.
+        Closes the connection with RabbitMQ asynchronously.
         """
-        if self.connection and self.connection.is_open:
-            await self.connection.close()
+        self.__should_reconnect = False
+        if self.__connection and self.__connection.is_open:
+            await self.__connection.close()
+
+    async def close_resources(self):
+        """
+        Chiude delicatamente il canale e la connessione.
+        """
+        try:
+            if self.__channel and self.__channel.is_open:
+                await self.__channel.close()
+                self.__logger.info(RabbitLogMessages.CHANNEL_CLOSED)
+        except Exception as e:
+            self.__logger.error(RabbitLogMessages.CHANNEL_CLOSING_ERROR.format(e))
+
+        try:
+            if self.__connection and self.__connection.is_open:
+                await self.__connection.close()
+                self.__logger.info(RabbitLogMessages.CONNECTION_CLOSED)
+        except Exception as e:
+            self.__logger.error(RabbitLogMessages.CONNECTION_CLOSING_ERROR.format(e))
+
+        self.__is_connected = False
 
 
 if __name__ == "__main__":

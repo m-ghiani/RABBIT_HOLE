@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>rabbithole.rabbit_log_messages &#8212; Rabbit Hole 1.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=362ab14a" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css?v=601dbdee" />
+    <script src="../../_static/documentation_options.js?v=aaadad1f"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Rabbit Hole 1.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rabbithole.rabbit_log_messages</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for rabbithole.rabbit_log_messages</h1><div class="highlight"><pre>
+<span></span><span class="c1"># log_messages.py</span>
+
+
+<div class="viewcode-block" id="RabbitLogMessages">
+<a class="viewcode-back" href="../../rabbithole.html#rabbithole.rabbit_log_messages.RabbitLogMessages">[docs]</a>
+<span class="k">class</span> <span class="nc">RabbitLogMessages</span><span class="p">:</span>
+    <span class="n">GENERIC_ERROR</span> <span class="o">=</span> <span class="s2">&quot;Error: </span><span class="si">{}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Costanti per i messaggi di log</span>
+    <span class="n">CONNECTION_OPENED</span> <span class="o">=</span> <span class="s2">&quot;Connection opened&quot;</span>
+    <span class="n">CONNECTION_OPENED_DEBUG</span> <span class="o">=</span> <span class="s2">&quot;Connection opened: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">CONNECTION_NOT_ESTABLISHED</span> <span class="o">=</span> <span class="s2">&quot;Connection not established&quot;</span>
+    <span class="n">CONNECTION_CLOSED</span> <span class="o">=</span> <span class="s2">&quot;Connection closed: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">CONNECTION_CLOSED_DEBUG</span> <span class="o">=</span> <span class="s2">&quot;Connection closed: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">CONNECTION_NOT_OPEN_ERROR</span> <span class="o">=</span> <span class="s2">&quot;Connection not open&quot;</span>
+    <span class="n">CONNECTION_OPEN_ERROR</span> <span class="o">=</span> <span class="s2">&quot;Connection open error: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">CONNECTION_OPEN_ERROR_DEBUG</span> <span class="o">=</span> <span class="s2">&quot;Connection </span><span class="si">{connection}</span><span class="s2"> open error: </span><span class="si">{error}</span><span class="s2">&quot;</span>
+    <span class="n">CONNECTION_FAILED</span> <span class="o">=</span> <span class="s2">&quot;Failed to connect to RabbitMQ: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">ATTEMPT_RECONNECT</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Attempt to reconnect </span><span class="si">{attempts}</span><span class="s2">/</span><span class="si">{max_attempts}</span><span class="s2"> in </span><span class="si">{delay}</span><span class="s2"> seconds...&quot;</span>
+    <span class="p">)</span>
+    <span class="n">RECONNECT_FAILED</span> <span class="o">=</span> <span class="s2">&quot;Reached the maximum number of reconnection attempts (</span><span class="si">{}</span><span class="s2">).&quot;</span>
+    <span class="n">CONNECTION_CLOSING_ERROR</span> <span class="o">=</span> <span class="s2">&quot;Error in closing connection: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">CONNECTION_NOT_OPENED</span> <span class="o">=</span> <span class="s2">&quot;Connection not opened&quot;</span>
+
+    <span class="n">CHANNEL_OPENED</span> <span class="o">=</span> <span class="s2">&quot;Channel opened&quot;</span>
+    <span class="n">CHANNEL_OPENED_DEBUG</span> <span class="o">=</span> <span class="s2">&quot;Channel opened: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">CHANNEL_OPEN_FAILED</span> <span class="o">=</span> <span class="s2">&quot;Failed to open channel: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">CHANNEL_OPEN_ERROR</span> <span class="o">=</span> <span class="s2">&quot;Error in opening channel: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">CHANNEL_OPEN_ERROR_DEBUG</span> <span class="o">=</span> <span class="s2">&quot;Channel </span><span class="si">{channel}</span><span class="s2"> open error: </span><span class="si">{error}</span><span class="s2">&quot;</span>
+    <span class="n">CHANNEL_CLOSED</span> <span class="o">=</span> <span class="s2">&quot;RabbitMQ channel closed.&quot;</span>
+    <span class="n">CHANNEL_CLOSING_ERROR</span> <span class="o">=</span> <span class="s2">&quot;Error in closing channel: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">CHANNEL_NOT_OPENED</span> <span class="o">=</span> <span class="s2">&quot;Channel not opened&quot;</span>
+
+    <span class="n">QUEUE_DECLARED</span> <span class="o">=</span> <span class="s2">&quot;[x] </span><span class="si">{}</span><span class="s2"> declared&quot;</span>
+    <span class="n">QUEUE_DECLARED_DEBUG</span> <span class="o">=</span> <span class="s2">&quot;[x] </span><span class="si">{exchange}</span><span class="s2"> declared: </span><span class="si">{frame}</span><span class="s2">&quot;</span>
+
+    <span class="n">MESSAGE_RECEIVED</span> <span class="o">=</span> <span class="s2">&quot;Received message: </span><span class="si">{}</span><span class="s2"> on channel: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">MESSAGE_RECEIVED_DEBUG</span> <span class="o">=</span> <span class="s2">&quot;Received message: </span><span class="si">{message}</span><span class="s2"> on channel: </span><span class="si">{channel}</span><span class="s2">, method: </span><span class="si">{method}</span><span class="s2">, properties: </span><span class="si">{properties}</span><span class="s2">&quot;</span>
+    <span class="n">MESSAGE_SENT</span> <span class="o">=</span> <span class="s2">&quot;Message sent to </span><span class="si">{}</span><span class="s2">: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">MESSAGE_SENDING_ERROR</span> <span class="o">=</span> <span class="s2">&quot;Error while sending message: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">MESSAGE_SENDING_ERROR_DEBUG</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;Error while sending message: </span><span class="si">{message}</span><span class="s2"> on channel: </span><span class="si">{channel}</span><span class="s2">, error: </span><span class="si">{error}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="n">MESSAGE_SEND_FAILED</span> <span class="o">=</span> <span class="s2">&quot;Failed to send message: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">MESSAGE_PROCESSING_ERROR</span> <span class="o">=</span> <span class="s2">&quot;Error while processing message: </span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">MESSAGE_PROCESSING_ERROR_DEBUG</span> <span class="o">=</span> <span class="s2">&quot;Error while processing message: </span><span class="si">{message}</span><span class="s2"> on channel: </span><span class="si">{channel}</span><span class="s2">, method: </span><span class="si">{method}</span><span class="s2">, properties: </span><span class="si">{properties}</span><span class="s2">, error: </span><span class="si">{error}</span><span class="s2">&quot;</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Rabbit Hole 1.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">rabbithole.rabbit_log_messages</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2023-2024, Massimo Ghiani.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    </div>
+  </body>
+</html>
