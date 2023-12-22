@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
+long_description = open("README.rst").read()
+
 setup(
     name="gh-rabbit-hole",
-    version="1.0.1.2",
+    version="1.0.2",
     author="Massimo Ghiani",
     author_email="m.ghiani@gmail.com",
     packages=find_packages(
@@ -10,7 +12,8 @@ setup(
     ),
     license="MIT",
     description="Pacchetto per la comunicazione con rabbitmq",
-    long_description=open("README.md").read(),
+    long_description=long_description,
+    long_description_content_type="text/x-rst",
     install_requires=["pika>=1.3.2", "requests>=2.31.0", "asyncio>=3.4.3"],
     python_requires=">=3.10",  # Specifica la versione di Python richiesta
     include_package_data=True,

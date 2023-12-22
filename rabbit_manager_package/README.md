@@ -3,9 +3,9 @@
 
 ## AsyncioRabbitManager
 
-### Panoramica (AsyncioRabbitManager)
+### Panoramica AsyncioRabbitManager
 
-`RabbitManager` è una classe Python che facilita la gestione e l'interazione con un server RabbitMQ. Fornisce funzionalità per la configurazione di code e scambi, l'invio e la ricezione di messaggi, e la gestione dinamica delle risorse su RabbitMQ.
+RabbitManager è una classe Python che facilita la gestione e l'interazione con un server RabbitMQ. Fornisce funzionalità per la configurazione di code e scambi, l'invio e la ricezione di messaggi, e la gestione dinamica delle risorse su RabbitMQ.
 
 ### Requisiti (AsyncioRabbitManager)
 
@@ -23,13 +23,13 @@ pip install pika asyncio
 
 ### Utilizzo (AsyncioRabbitManager)
 
-#### Creazione dell'istanza `AsyncRabbitManager`
+#### Creazione dell'istanza AsyncRabbitManager
 
-Per utilizzare la classe `RabbitManager`, è necessario prima crearne un'istanza. L'istanza richiede i dettagli della connessione al server RabbitMQ, come l'URL AMQP, il nome della coda di invio e di ascolto, e il nome dello scambio:
+Per utilizzare la classe RabbitManager, è necessario prima crearne un'istanza.
+L'istanza richiede i dettagli della connessione al server RabbitMQ, come l'URL AMQP, il nome della coda di invio e di ascolto, e il nome dello scambio:
 
 ```python
 from rabbit_manager import RabbitManager
-
 amqp_url = 'amqp://guest:guest@localhost:5672/'
 sending_queue = 'test_queue'
 listening_queue = 'test_queue'
@@ -80,7 +80,6 @@ Per assicurare una chiusura pulita e ordinata della connessione con il server Ra
 
 ```python
 import asyncio
-
 # Crea un'istanza della classe RabbitManager
 rabbit_manager = RabbitManager(amqp_url, sending_queue, listening_queue, sending_exchange)
 
@@ -99,7 +98,6 @@ loop.run_until_complete(manage_rabbit())
 ```
 
 Nell'esempio sopra, `manage_rabbit` è una coroutine asincrona che gestisce il ciclo di vita della connessione RabbitMQ. Dopo aver completato tutte le operazioni necessarie, chiama `rabbit_manager.close_connection()` per chiudere in modo sicuro la connessione.
-
 Ricorda che è importante utilizzare `asyncio` per eseguire queste operazioni in quanto la classe `RabbitManager` è progettata per funzionare in modo asincrono.
 
 ## RabbitManager
@@ -215,7 +213,6 @@ Questa classe gestisce file di configurazione in formato JSON. Permette di caric
 
 ```python
 from config_file_manager import ConfigFileManager
-
 # Crea un'istanza di ConfigFileManager
 config_manager = ConfigFileManager("config_directory", "config_file.json")
 
@@ -264,7 +261,6 @@ Gestisce la configurazione specifica per RabbitMQ, caricando valori predefiniti 
 
 ```python
 from rabbit_config import RabbitConfig
-
 # Assumi che config_manager sia un'istanza di ConfigFileManager
 rabbit_config = RabbitConfig(config_manager)
 

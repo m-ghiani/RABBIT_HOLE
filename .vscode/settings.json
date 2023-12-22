@@ -16,6 +16,8 @@
     "**/__pycache__": true
   },
   "cSpell.words": [
+    "ainput",
+    "aioconsole",
     "amqp",
     "asyncio",
     "BGRX",
@@ -32,6 +34,7 @@
     "nbytes",
     "ndarray",
     "opencv",
+    "pypandoc",
     "rabbithole",
     "rabbitmq",
     "rawvideo",
@@ -44,4 +47,5 @@
   ],
   "python.analysis.typeCheckingMode": "off",
   "python.analysis.autoImportCompletions": true,
+  "esbonio.sphinx.confDir": "",
 }
