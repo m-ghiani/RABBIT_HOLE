@@ -1,10 +1,18 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *$py.class
-repo_old_classes/
-app_config/
-*.vscode/
+**test_config/
+**repo_old_classes/
+
+# Vscode
+.vscode/
+**/.vscode/
+**/.vscode-test/
+**/.vscode-test-remote/
+
+
 # C extensions
 *.so
 
@@ -120,10 +128,6 @@ celerybeat.pid
 
 # SageMath parsed files
 *.sage.py
-
-# VS Code
-.vscode
-
 
 # Environments
 .env
