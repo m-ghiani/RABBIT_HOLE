@@ -11,26 +11,28 @@ DEFAULT_CONFIG = {
 }
 
 REQUIRED_KEYS = [
-    {'key': 'amqp_url', 'type': str},
-    {'key': 'sending_queue', 'type': str},
-    {'key': 'listening_queue', 'type': str},
-    {'key': 'sending_exchange', 'type': str},
-    {'key': 'reconnect_delay', 'type': int},
-    {'key': 'max_reconnect_attempts', 'type': int}
+    {"key": "amqp_url", "type": str},
+    {"key": "sending_queue", "type": str},
+    {"key": "listening_queue", "type": str},
+    {"key": "sending_exchange", "type": str},
+    {"key": "reconnect_delay", "type": int},
+    {"key": "max_reconnect_attempts", "type": int},
 ]
 
 
 class RabbitConfig:
     def __init__(
         self,
-        config_file_manager: ConfigFileManager = ConfigFileManager("app_config", "config.json"),
+        config_file_manager: ConfigFileManager = ConfigFileManager(
+            "app_config", "config.json"
+        ),
         required_keys: list = REQUIRED_KEYS,
         default_config: dict = DEFAULT_CONFIG,
     ):
         self.config_file_manager = config_file_manager
-        self.config: dict = self.load_or_initialize_config()
         self._default_config = default_config
         self.__required_keys = required_keys
+        self.config: dict = self.load_or_initialize_config()
 
     def load_or_initialize_config(self):
         config = self.config_file_manager.load()

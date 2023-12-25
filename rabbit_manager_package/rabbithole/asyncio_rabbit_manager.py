@@ -1,4 +1,5 @@
 import asyncio
+from uu import Error
 import pika
 import json
 import logging
@@ -54,6 +55,20 @@ class AsyncioRabbitManager:
         on_message_callback (Callable, optional): Asynchronous callback invoked when a message is received.
     """
 
+    __author__ = "Massimo Ghiani <m.ghiani@gmail.com>"
+    __status__ = "production"
+    # The following module attributes are no longer updated.
+    __version__ = "1.5.5"
+    __date__ = "25 December 2023"
+
+    __all__ = [
+        "connect",
+        "attempt_reconnect",
+        "send_message",
+        "close_connection",
+        "close_resources",
+    ]
+
     def __init__(
         self,
         rabbit_config: RabbitConfig,
@@ -78,7 +93,6 @@ class AsyncioRabbitManager:
     def __init_logger(self, logger: logging.Logger, log_level: str):
         self.__logger = logger or logging.getLogger(__name__)
         self.__logger.setLevel(getattr(logging, log_level, logging.INFO))
-        self.__logger.info(RabbitLogMessages.INIT_MANAGER)
 
     def __init_configuration(self, config: dict):
         self.amqp_url: str = config.get("amqp_url")
@@ -87,6 +101,8 @@ class AsyncioRabbitManager:
         self.sending_exchange: str = config.get("sending_exchange")
         self.reconnect_delay: int = int(config.get("reconnect_delay", 5))
         self.max_reconnect_attempts: int = int(config.get("max_reconnect_attempts", 3))
+        self.log_on_receiving: bool = config.get("log_on_receiving", False)
+        self.log_on_sending: bool = config.get("log_on_sending", False)
 
     def __del__(self):
         """
@@ -103,9 +119,9 @@ class AsyncioRabbitManager:
             connection_parameters = pika.URLParameters(self.amqp_url)
             self.__connection: AsyncioConnection = AsyncioConnection(
                 parameters=connection_parameters,
-                on_open_callback=self.on_connection_open,
-                on_open_error_callback=self.on_connection_open_error,
-                on_close_callback=self.on_connection_closed,
+                on_open_callback=self.__on_connection_open,
+                on_open_error_callback=self.__on_connection_open_error,
+                on_close_callback=self.__on_connection_closed,
             )
             await self.__connection_opened_event.wait()
             await self.__channel_opened_event.wait()
@@ -148,7 +164,7 @@ class AsyncioRabbitManager:
                 )
             )
 
-    def on_connection_open(self, connection):
+    def __on_connection_open(self, connection):
         """
         Callback invoked when the connection to RabbitMQ is opened.
 
@@ -157,14 +173,14 @@ class AsyncioRabbitManager:
         """
         self.__logger.info(RabbitLogMessages.CONNECTION_OPENED)
         self.__logger.debug(
-            RabbitLogMessages.CONNECTION_OPENED_DEBUG.format(connection)
+            f"on_connection_open: {RabbitLogMessages.CONNECTION_OPENED_DEBUG.format(connection)}"
         )
-        self.__connection.channel(on_open_callback=self.on_channel_open)
+        self.__connection.channel(on_open_callback=self.__on_channel_open)
         self.__connection_opened_event.set()
         self.__is_connected = True
         self.__reconnect_attempts = 0
 
-    def on_connection_closed(self, connection, reason):
+    def __on_connection_closed(self, connection, reason):
         """
         Callback invoked when the connection to RabbitMQ is closed.
 
@@ -174,14 +190,14 @@ class AsyncioRabbitManager:
         """
         self.__logger.info(RabbitLogMessages.CONNECTION_CLOSED.format(reason))
         self.__logger.debug(
-            RabbitLogMessages.CONNECTION_CLOSED_DEBUG.format(connection)
+            f"on_connection_closed: {RabbitLogMessages.CONNECTION_CLOSED_DEBUG.format(connection)}"
         )
 
         self.__is_connected = False
         asyncio.create_task(self.attempt_reconnect())
         asyncio.create_task(self.close_resources())
 
-    def on_connection_open_error(self, connection, error):
+    def __on_connection_open_error(self, connection, error):
         """
         Callback invoked in case of an error during connection opening.
 
@@ -191,14 +207,14 @@ class AsyncioRabbitManager:
         """
         self.__logger.error(RabbitLogMessages.CONNECTION_OPEN_ERROR.format(error))
         self.__logger.debug(
-            RabbitLogMessages.CONNECTION_OPEN_ERROR_DEBUG.format(connection, error)
+            f"on_connection_open_error: {RabbitLogMessages.CONNECTION_OPEN_ERROR_DEBUG.format(connection, error)}"
         )
         self.__is_connected = False
         self.__connection_opened_event.set()
         self.__should_reconnect = False
         asyncio.create_task(self.attempt_reconnect())
 
-    def on_channel_open(self, channel):
+    def __on_channel_open(self, channel):
         """
         Callback invoked when a RabbitMQ channel is opened.
 
@@ -207,33 +223,35 @@ class AsyncioRabbitManager:
         """
         try:
             self.__logger.info(RabbitLogMessages.CHANNEL_OPENED)
-            self.__logger.debug(RabbitLogMessages.CHANNEL_OPENED_DEBUG.format(channel))
+            self.__logger.debug(
+                f"on_channel_open: {RabbitLogMessages.CHANNEL_OPENED_DEBUG.format(channel)}"
+            )
             self.__channel: pika.channel.Channel = channel
             self.__channel.exchange_declare(
                 exchange=self.sending_exchange,
                 exchange_type="direct",
-                callback=self.on_exchange_declareok,
+                callback=self.__on_exchange_declareok,
             )
             self.__channel.queue_declare(
                 queue=self.sending_queue,
-                callback=self.on_sending_queue_declareok,
+                callback=self.__on_sending_queue_declareok,
                 durable=True,
             )
             self.__channel.queue_declare(
                 queue=self.listening_queue,
-                callback=self.on_listening_queue_declareok,
+                callback=self.__on_listening_queue_declareok,
                 durable=True,
             )
             self.__channel_opened_event.set()
         except pika.exceptions.ChannelError as e:
             self.__logger.error(RabbitLogMessages.CHANNEL_OPEN_ERROR.format(e))
             self.__logger.debug(
-                RabbitLogMessages.CHANNEL_OPEN_ERROR_DEBUG.format(channel, e)
+                f"on_channel_open: {RabbitLogMessages.CHANNEL_OPEN_ERROR_DEBUG.format(channel, e)}"
             )
         except Exception as e:
             self.__logger.error(RabbitLogMessages.GENERIC_ERROR.format(e))
 
-    def on_exchange_declareok(self, frame):
+    def __on_exchange_declareok(self, frame):
         """
         Callback invoked after the exchange declaration.
 
@@ -244,11 +262,11 @@ class AsyncioRabbitManager:
             RabbitLogMessages.QUEUE_DECLARED.format(self.sending_exchange)
         )
         self.__logger.debug(
-            RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.send_message, frame)
+            f"on_exchange_declareok: {RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.send_message, frame)}"
         )
         self.__exchange_declared_event.set()
 
-    def on_listening_queue_declareok(self, frame):
+    def __on_listening_queue_declareok(self, frame):
         """
         Callback invoked after the listening queue declaration.
 
@@ -259,17 +277,18 @@ class AsyncioRabbitManager:
             RabbitLogMessages.QUEUE_DECLARED.format(self.listening_queue)
         )
         self.__logger.debug(
-            RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.listening_queue, frame)
+            f"on_listening_queue_declareok: {RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.listening_queue, frame)}"
         )
         if self.listening_queue:
             self.__channel.basic_consume(
                 queue=self.listening_queue,
-                on_message_callback=self.on_message_wrapper,
+                on_message_callback=self.__on_message_wrapper,
                 auto_ack=True,
             )
+
         self.__listening_queue_declared_event.set()
 
-    def on_sending_queue_declareok(self, frame):
+    def __on_sending_queue_declareok(self, frame):
         """
         Callback invoked after the sending queue declaration.
 
@@ -278,11 +297,11 @@ class AsyncioRabbitManager:
         """
         self.__logger.info(RabbitLogMessages.QUEUE_DECLARED.format(self.sending_queue))
         self.__logger.debug(
-            RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.sending_queue, frame)
+            f"on_sending_queue_declareok: {RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.sending_queue, frame)}"
         )
         self.__sending_queue_declared_event.set()
 
-    def on_message_wrapper(self, channel, method, properties, body):
+    def __on_message_wrapper(self, channel, method, properties, body):
         """
         Wrapper for the on_message callback, creates an asynchronous task.
 
@@ -292,9 +311,9 @@ class AsyncioRabbitManager:
             properties: RabbitMQ message properties.
             body: Message body.
         """
-        asyncio.create_task(self.on_message(channel, method, properties, body))
+        asyncio.create_task(self.__on_message(channel, method, properties, body))
 
-    async def on_message(self, channel, method, properties, body):
+    async def __on_message(self, channel, method, properties, body):
         """
         Asynchronous callback for handling received messages.
 
@@ -305,24 +324,31 @@ class AsyncioRabbitManager:
             body: Message body.
         """
         try:
-            if self.on_message_callback:
-                await self.on_message_callback(channel, method, properties, body)
-            else:
+            if self.log_on_receiving:
                 self.__logger.info(
                     RabbitLogMessages.MESSAGE_RECEIVED.format(body, channel)
                 )
-                self.__logger.debug(
-                    RabbitLogMessages.MESSAGE_RECEIVED_DEBUG.format(
-                        body, channel, method, properties
+            if self.on_message_callback:
+                if self.log_on_receiving:
+                    self.__logger.debug(
+                        f"on_message: {RabbitLogMessages.MESSAGE_RECEIVED_DEBUG.format(body, channel, method, properties)}"
                     )
-                )
+                await self.on_message_callback(channel, method, properties, body)
+
+            else:
+                if self.log_on_receiving:
+                    self.__logger.info(
+                        RabbitLogMessages.MESSAGE_RECEIVED.format(body, channel)
+                    )
+                    self.__logger.debug(
+                        f"on_message: {RabbitLogMessages.MESSAGE_RECEIVED_DEBUG.format(body, channel, method, properties)}"
+                    )
         except Exception as e:
             self.__logger.error(RabbitLogMessages.MESSAGE_PROCESSING_ERROR.format(e))
             self.__logger.debug(
-                RabbitLogMessages.MESSAGE_PROCESSING_ERROR_DEBUG.format(
-                    body, channel, method, properties, e
-                )
+                f"on_message: {RabbitLogMessages.MESSAGE_PROCESSING_ERROR_DEBUG.format(body, channel, method, properties, e)}"
             )
+            raise Error(RabbitLogMessages.MESSAGE_PROCESSING_ERROR.format(e))
 
     def send_message(self, message, routing_key="", to_exchange=False):
         """
@@ -356,16 +382,16 @@ class AsyncioRabbitManager:
                 body=message,
                 properties=properties,
             )
-            self.__logger.info(
-                RabbitLogMessages.MESSAGE_SENT.format(message, routing_key)
-            )
+            if self.log_on_sending:
+                self.__logger.info(
+                    RabbitLogMessages.MESSAGE_SENT.format(message, routing_key)
+                )
         except Exception as e:
             self.__logger.error(RabbitLogMessages.MESSAGE_SENDING_ERROR.format(e))
             self.__logger.debug(
-                RabbitLogMessages.MESSAGE_SENDING_ERROR_DEBUG.format(
-                    message, routing_key, e
-                )
+                f"send_message: {RabbitLogMessages.MESSAGE_SENDING_ERROR_DEBUG.format(message, routing_key, e)}"
             )
+            raise Error(RabbitLogMessages.MESSAGE_SEND_FAILED.format(e))
 
     async def close_connection(self):
         """
@@ -399,6 +425,7 @@ class AsyncioRabbitManager:
 if __name__ == "__main__":
     import aioconsole
 
+    # Configurazione del formato del log
     LOG_FORMAT = (
         "\033[1;31m%(levelname)s\033[1;0m "  # Rosso per il livello di log
         "\033[1;34m%(asctime)s\033[1;0m "  # Blu per il timestamp
@@ -411,27 +438,34 @@ if __name__ == "__main__":
     LOGGER = logging.getLogger("RabbitManager")
     LOGGER.setLevel(logging.INFO)
 
+    # Creazione di un'istanza di RabbitConfig
+    config = {
+        "amqp_url": "amqp://guest:guest@localhost:5672/",
+        "sending_queue": "frame_ready_queue",
+        "listening_queue": "commands_queue",
+        "sending_exchange": "test_exchange",
+        "reconnect_delay": 5,
+        "max_reconnect_attempts": 3,
+        "log_level": "INFO",
+    }
+    rabbit_config = RabbitConfig(default_config=config)
+
     async def message_received(channel, method, properties, body):
         LOGGER.info("Message received: %s", body)
 
     async def main():
-        # loop = asyncio.get_event_loop()
-        amqp_url = "amqp://guest:guest@localhost:5672/"
         rabbit_manager = AsyncioRabbitManager(
-            amqp_url=amqp_url,
-            sending_queue="frame_ready_queue",
-            listening_queue="commands_queue",
-            sending_exchange="test_exchange",
+            rabbit_config=rabbit_config,
             logger=LOGGER,
             on_message_callback=message_received,
         )
         await rabbit_manager.connect()
-        # await asyncio.sleep(2)
+
         while True:
             message = await aioconsole.ainput("Inserisci un messaggio: ")
-            rabbit_manager.send_message({"message": message}, routing_key="")
+            rabbit_manager.send_message({"message": message})
 
         await rabbit_manager.close_connection()
 
-    # Altre operazioni asincrone possono essere aggiunte qui
+    # Esecuzione del loop principale
     asyncio.run(main())
