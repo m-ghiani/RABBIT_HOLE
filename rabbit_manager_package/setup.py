@@ -4,7 +4,7 @@ long_description = open("README.rst").read()
 
 setup(
     name="gh-rabbit-hole",
-    version="1.5.5",
+    version="1.5.6",
     url="https://github.com/m-ghiani/RABBIT_HOLE",
     author="Massimo Ghiani",
     author_email="m.ghiani@gmail.com",

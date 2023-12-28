@@ -54,21 +54,14 @@ class AsyncioRabbitManager:
         log_level (str, optional): Log level. Defaults to "INFO".
         on_message_callback (Callable, optional): Asynchronous callback invoked when a message is received.
     """
-
+    __doc__ = "The AsyncioRabbitManager class provides an asynchronous interface to connect and interact with RabbitMQ using Python and asyncio."
     __author__ = "Massimo Ghiani <m.ghiani@gmail.com>"
     __status__ = "production"
     # The following module attributes are no longer updated.
-    __version__ = "1.5.5"
+    __version__ = "1.5.6"
     __date__ = "25 December 2023"
-
-    __all__ = [
-        "connect",
-        "attempt_reconnect",
-        "send_message",
-        "close_connection",
-        "close_resources",
-    ]
-
+    __maintainer__ = "Massimo Ghiani <m.ghiani@gmail.com>"
+    
     def __init__(
         self,
         rabbit_config: RabbitConfig,
@@ -157,7 +150,7 @@ class AsyncioRabbitManager:
             await asyncio.sleep(self.reconnect_delay)
             await self.connect()
 
-        if not self.__is_connected:
+        if not self.__is_connected and self.__should_reconnect:
             self.__logger.error(
                 RabbitLogMessages.MAX_RECONNECT_ATTEMPTS_REACHED.format(
                     self.max_reconnect_attempts
@@ -194,8 +187,9 @@ class AsyncioRabbitManager:
         )
 
         self.__is_connected = False
-        asyncio.create_task(self.attempt_reconnect())
-        asyncio.create_task(self.close_resources())
+        if self.__should_reconnect:
+            asyncio.create_task(self.attempt_reconnect())
+        # asyncio.create_task(self.close_resources())
 
     def __on_connection_open_error(self, connection, error):
         """
@@ -398,8 +392,11 @@ class AsyncioRabbitManager:
         Closes the connection with RabbitMQ asynchronously.
         """
         self.__should_reconnect = False
-        if self.__connection and self.__connection.is_open:
-            await self.__connection.close()
+        if self.__connection.is_closing or self.__connection.is_closed:
+            LOGGER.info('Connection is closing or already closed')
+        else:
+            LOGGER.info('Closing connection')
+            self.__connection.close()
 
     async def close_resources(self):
         """
@@ -414,7 +411,7 @@ class AsyncioRabbitManager:
 
         try:
             if self.__connection and self.__connection.is_open:
-                await self.__connection.close()
+                await self.close_connection()
                 self.__logger.info(RabbitLogMessages.CONNECTION_CLOSED)
         except Exception as e:
             self.__logger.error(RabbitLogMessages.CONNECTION_CLOSING_ERROR.format(e))
@@ -451,7 +448,8 @@ if __name__ == "__main__":
     rabbit_config = RabbitConfig(default_config=config)
 
     async def message_received(channel, method, properties, body):
-        LOGGER.info("Message received: %s", body)
+        json_body = json.loads(body)
+        LOGGER.info("Message received: %s", json_body["message"])
 
     async def main():
         rabbit_manager = AsyncioRabbitManager(
@@ -463,6 +461,8 @@ if __name__ == "__main__":
 
         while True:
             message = await aioconsole.ainput("Inserisci un messaggio: ")
+            if message == "exit":
+                break
             rabbit_manager.send_message({"message": message})
 
         await rabbit_manager.close_connection()
