@@ -54,14 +54,15 @@ class AsyncioRabbitManager:
         log_level (str, optional): Log level. Defaults to "INFO".
         on_message_callback (Callable, optional): Asynchronous callback invoked when a message is received.
     """
+
     __doc__ = "The AsyncioRabbitManager class provides an asynchronous interface to connect and interact with RabbitMQ using Python and asyncio."
     __author__ = "Massimo Ghiani <m.ghiani@gmail.com>"
     __status__ = "production"
     # The following module attributes are no longer updated.
-    __version__ = "1.5.6"
+    __version__ = "1.5.8"
     __date__ = "25 December 2023"
     __maintainer__ = "Massimo Ghiani <m.ghiani@gmail.com>"
-    
+
     def __init__(
         self,
         rabbit_config: RabbitConfig,
@@ -92,6 +93,7 @@ class AsyncioRabbitManager:
         self.sending_queue: str = config.get("sending_queue")
         self.listening_queue: str = config.get("listening_queue")
         self.sending_exchange: str = config.get("sending_exchange")
+        self.exchange_type: str = config.get("exchange_type", "direct")
         self.reconnect_delay: int = int(config.get("reconnect_delay", 5))
         self.max_reconnect_attempts: int = int(config.get("max_reconnect_attempts", 3))
         self.log_on_receiving: bool = config.get("log_on_receiving", False)
@@ -221,22 +223,37 @@ class AsyncioRabbitManager:
                 f"on_channel_open: {RabbitLogMessages.CHANNEL_OPENED_DEBUG.format(channel)}"
             )
             self.__channel: pika.channel.Channel = channel
-            self.__channel.exchange_declare(
-                exchange=self.sending_exchange,
-                exchange_type="direct",
-                callback=self.__on_exchange_declareok,
-            )
-            self.__channel.queue_declare(
-                queue=self.sending_queue,
-                callback=self.__on_sending_queue_declareok,
-                durable=True,
-            )
-            self.__channel.queue_declare(
-                queue=self.listening_queue,
-                callback=self.__on_listening_queue_declareok,
-                durable=True,
-            )
             self.__channel_opened_event.set()
+            if self.sending_queue and self.sending_queue != "":
+                self.__channel.queue_declare(
+                    queue=self.sending_queue,
+                    callback=self.__on_sending_queue_declareok,
+                    durable=True,
+                )
+            else:
+                self.__sending_queue_declared_event.set()
+            if self.listening_queue and self.listening_queue != "":
+                self.__channel.queue_declare(
+                    queue=self.listening_queue,
+                    callback=self.__on_listening_queue_declareok,
+                    durable=True,
+                )
+            else:
+                self.__listening_queue_declared_event.set()
+            if self.sending_exchange and self.sending_exchange != "":
+                self.__channel.exchange_declare(
+                    exchange=self.sending_exchange,
+                    exchange_type=self.exchange_type,
+                    callback=self.__on_exchange_declareok,
+                )
+                if self.sending_queue and self.sending_queue != "":
+                    self.__channel.queue_bind(
+                        exchange=self.sending_exchange,
+                        queue=self.sending_queue,
+                        routing_key=self.sending_queue,
+                    )
+            else:
+                self.__exchange_declared_event.set()
         except pika.exceptions.ChannelError as e:
             self.__logger.error(RabbitLogMessages.CHANNEL_OPEN_ERROR.format(e))
             self.__logger.debug(
@@ -393,9 +410,9 @@ class AsyncioRabbitManager:
         """
         self.__should_reconnect = False
         if self.__connection.is_closing or self.__connection.is_closed:
-            LOGGER.info('Connection is closing or already closed')
+            self.__logger.info("Connection is closing or already closed")
         else:
-            LOGGER.info('Closing connection')
+            self.__logger.info("Closing connection")
             self.__connection.close()
 
     async def close_resources(self):
@@ -417,55 +434,3 @@ class AsyncioRabbitManager:
             self.__logger.error(RabbitLogMessages.CONNECTION_CLOSING_ERROR.format(e))
 
         self.__is_connected = False
-
-
-if __name__ == "__main__":
-    import aioconsole
-
-    # Configurazione del formato del log
-    LOG_FORMAT = (
-        "\033[1;31m%(levelname)s\033[1;0m "  # Rosso per il livello di log
-        "\033[1;34m%(asctime)s\033[1;0m "  # Blu per il timestamp
-        "\033[1;32m%(name)-30s\033[1;0m "  # Verde per il nome del logger
-        "\033[1;35m%(funcName)-35s\033[1;0m "  # Viola per il nome della funzione
-        "\033[1;33m%(lineno)-5d\033[1;0m: "  # Giallo per il numero di riga
-        "%(message)s"  # Testo normale per il messaggio
-    )
-    logging.basicConfig(level=logging.ERROR, format=LOG_FORMAT)
-    LOGGER = logging.getLogger("RabbitManager")
-    LOGGER.setLevel(logging.INFO)
-
-    # Creazione di un'istanza di RabbitConfig
-    config = {
-        "amqp_url": "amqp://guest:guest@localhost:5672/",
-        "sending_queue": "frame_ready_queue",
-        "listening_queue": "commands_queue",
-        "sending_exchange": "test_exchange",
-        "reconnect_delay": 5,
-        "max_reconnect_attempts": 3,
-        "log_level": "INFO",
-    }
-    rabbit_config = RabbitConfig(default_config=config)
-
-    async def message_received(channel, method, properties, body):
-        json_body = json.loads(body)
-        LOGGER.info("Message received: %s", json_body["message"])
-
-    async def main():
-        rabbit_manager = AsyncioRabbitManager(
-            rabbit_config=rabbit_config,
-            logger=LOGGER,
-            on_message_callback=message_received,
-        )
-        await rabbit_manager.connect()
-
-        while True:
-            message = await aioconsole.ainput("Inserisci un messaggio: ")
-            if message == "exit":
-                break
-            rabbit_manager.send_message({"message": message})
-
-        await rabbit_manager.close_connection()
-
-    # Esecuzione del loop principale
-    asyncio.run(main())
