@@ -4,13 +4,16 @@ long_description = open("README.rst").read()
 
 setup(
     name="gh-rabbit-hole",
-    version="1.5.8",
+    version="1.6.0",
     url="https://github.com/m-ghiani/RABBIT_HOLE",
     author="Massimo Ghiani",
     author_email="m.ghiani@gmail.com",
     packages=find_packages(
         exclude=["*.tests", "*.tests.*", "tests.*", "tests", "main.py", ".vscode"]
     ),
+    project_urls={
+        "Documentation": "https://rabbit-hole.readthedocs.io/en/latest/",
+    }
     license="MIT",
     description="Package for communication with RabbitMQ",
     long_description=long_description,

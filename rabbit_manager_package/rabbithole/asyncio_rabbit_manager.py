@@ -4,7 +4,7 @@ import pika
 import json
 import logging
 from pika.adapters.asyncio_connection import AsyncioConnection
-from rabbithole.rabbit_log_messages import RabbitLogMessages
+from rabbithole.constants import Constants
 from rabbithole.config import RabbitConfig
 
 
@@ -59,8 +59,8 @@ class AsyncioRabbitManager:
     __author__ = "Massimo Ghiani <m.ghiani@gmail.com>"
     __status__ = "production"
     # The following module attributes are no longer updated.
-    __version__ = "1.5.8"
-    __date__ = "25 December 2023"
+    __version__ = "1.6.0"
+    __date__ = "01 January 2024"
     __maintainer__ = "Massimo Ghiani <m.ghiani@gmail.com>"
 
     def __init__(
@@ -126,14 +126,12 @@ class AsyncioRabbitManager:
             # self.__connection_opened_event.clear()
         except pika.exceptions.AMQPConnectionError as e:
             self.__logger.error(
-                f"{RabbitLogMessages.CONNECTION_FAILED} AMQPConnectionError: {e}"
+                f"{Constants.CONNECTION_FAILED} AMQPConnectionError: {e}"
             )
         except asyncio.TimeoutError as e:
-            self.__logger.error(
-                f"{RabbitLogMessages.CONNECTION_FAILED} TimeoutError: {e}"
-            )
+            self.__logger.error(f"{Constants.CONNECTION_FAILED} TimeoutError: {e}")
         except Exception as e:
-            self.__logger.error(RabbitLogMessages.CONNECTION_FAILED.format(e))
+            self.__logger.error(Constants.CONNECTION_FAILED.format(e))
 
     async def attempt_reconnect(self):
         while (
@@ -143,7 +141,7 @@ class AsyncioRabbitManager:
         ):
             self.__reconnect_attempts += 1
             self.__logger.info(
-                RabbitLogMessages.ATTEMPT_RECONNECT.format(
+                Constants.ATTEMPT_RECONNECT.format(
                     self.__reconnect_attempts,
                     self.max_reconnect_attempts,
                     self.reconnect_delay,
@@ -154,7 +152,7 @@ class AsyncioRabbitManager:
 
         if not self.__is_connected and self.__should_reconnect:
             self.__logger.error(
-                RabbitLogMessages.MAX_RECONNECT_ATTEMPTS_REACHED.format(
+                Constants.MAX_RECONNECT_ATTEMPTS_REACHED.format(
                     self.max_reconnect_attempts
                 )
             )
@@ -166,9 +164,9 @@ class AsyncioRabbitManager:
         Args:
             connection: Connection to RabbitMQ.
         """
-        self.__logger.info(RabbitLogMessages.CONNECTION_OPENED)
+        self.__logger.info(Constants.CONNECTION_OPENED)
         self.__logger.debug(
-            f"on_connection_open: {RabbitLogMessages.CONNECTION_OPENED_DEBUG.format(connection)}"
+            f"on_connection_open: {Constants.CONNECTION_OPENED_DEBUG.format(connection)}"
         )
         self.__connection.channel(on_open_callback=self.__on_channel_open)
         self.__connection_opened_event.set()
@@ -183,9 +181,9 @@ class AsyncioRabbitManager:
             connection: Connection to RabbitMQ.
             reason: Reason for closing the connection.
         """
-        self.__logger.info(RabbitLogMessages.CONNECTION_CLOSED.format(reason))
+        self.__logger.info(Constants.CONNECTION_CLOSED.format(reason))
         self.__logger.debug(
-            f"on_connection_closed: {RabbitLogMessages.CONNECTION_CLOSED_DEBUG.format(connection)}"
+            f"on_connection_closed: {Constants.CONNECTION_CLOSED_DEBUG.format(connection)}"
         )
 
         self.__is_connected = False
@@ -201,9 +199,9 @@ class AsyncioRabbitManager:
             connection: Connection to RabbitMQ.
             error: Error object describing the encountered issue.
         """
-        self.__logger.error(RabbitLogMessages.CONNECTION_OPEN_ERROR.format(error))
+        self.__logger.error(Constants.CONNECTION_OPEN_ERROR.format(error))
         self.__logger.debug(
-            f"on_connection_open_error: {RabbitLogMessages.CONNECTION_OPEN_ERROR_DEBUG.format(connection, error)}"
+            f"on_connection_open_error: {Constants.CONNECTION_OPEN_ERROR_DEBUG.format(connection, error)}"
         )
         self.__is_connected = False
         self.__connection_opened_event.set()
@@ -218,9 +216,9 @@ class AsyncioRabbitManager:
             channel: Opened RabbitMQ channel.
         """
         try:
-            self.__logger.info(RabbitLogMessages.CHANNEL_OPENED)
+            self.__logger.info(Constants.CHANNEL_OPENED)
             self.__logger.debug(
-                f"on_channel_open: {RabbitLogMessages.CHANNEL_OPENED_DEBUG.format(channel)}"
+                f"on_channel_open: {Constants.CHANNEL_OPENED_DEBUG.format(channel)}"
             )
             self.__channel: pika.channel.Channel = channel
             self.__channel_opened_event.set()
@@ -255,12 +253,12 @@ class AsyncioRabbitManager:
             else:
                 self.__exchange_declared_event.set()
         except pika.exceptions.ChannelError as e:
-            self.__logger.error(RabbitLogMessages.CHANNEL_OPEN_ERROR.format(e))
+            self.__logger.error(Constants.CHANNEL_OPEN_ERROR.format(e))
             self.__logger.debug(
-                f"on_channel_open: {RabbitLogMessages.CHANNEL_OPEN_ERROR_DEBUG.format(channel, e)}"
+                f"on_channel_open: {Constants.CHANNEL_OPEN_ERROR_DEBUG.format(channel, e)}"
             )
         except Exception as e:
-            self.__logger.error(RabbitLogMessages.GENERIC_ERROR.format(e))
+            self.__logger.error(Constants.GENERIC_ERROR.format(e))
 
     def __on_exchange_declareok(self, frame):
         """
@@ -269,11 +267,9 @@ class AsyncioRabbitManager:
         Args:
             frame: RabbitMQ response frame.
         """
-        self.__logger.info(
-            RabbitLogMessages.QUEUE_DECLARED.format(self.sending_exchange)
-        )
+        self.__logger.info(Constants.QUEUE_DECLARED.format(self.sending_exchange))
         self.__logger.debug(
-            f"on_exchange_declareok: {RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.send_message, frame)}"
+            f"on_exchange_declareok: {Constants.QUEUE_DECLARED_DEBUG.format(self.send_message, frame)}"
         )
         self.__exchange_declared_event.set()
 
@@ -284,11 +280,9 @@ class AsyncioRabbitManager:
         Args:
             frame: RabbitMQ response frame.
         """
-        self.__logger.info(
-            RabbitLogMessages.QUEUE_DECLARED.format(self.listening_queue)
-        )
+        self.__logger.info(Constants.QUEUE_DECLARED.format(self.listening_queue))
         self.__logger.debug(
-            f"on_listening_queue_declareok: {RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.listening_queue, frame)}"
+            f"on_listening_queue_declareok: {Constants.QUEUE_DECLARED_DEBUG.format(self.listening_queue, frame)}"
         )
         if self.listening_queue:
             self.__channel.basic_consume(
@@ -306,9 +300,9 @@ class AsyncioRabbitManager:
         Args:
             frame: RabbitMQ response frame.
         """
-        self.__logger.info(RabbitLogMessages.QUEUE_DECLARED.format(self.sending_queue))
+        self.__logger.info(Constants.QUEUE_DECLARED.format(self.sending_queue))
         self.__logger.debug(
-            f"on_sending_queue_declareok: {RabbitLogMessages.QUEUE_DECLARED_DEBUG.format(self.sending_queue, frame)}"
+            f"on_sending_queue_declareok: {Constants.QUEUE_DECLARED_DEBUG.format(self.sending_queue, frame)}"
         )
         self.__sending_queue_declared_event.set()
 
@@ -336,30 +330,26 @@ class AsyncioRabbitManager:
         """
         try:
             if self.log_on_receiving:
-                self.__logger.info(
-                    RabbitLogMessages.MESSAGE_RECEIVED.format(body, channel)
-                )
+                self.__logger.info(Constants.MESSAGE_RECEIVED.format(body, channel))
             if self.on_message_callback:
                 if self.log_on_receiving:
                     self.__logger.debug(
-                        f"on_message: {RabbitLogMessages.MESSAGE_RECEIVED_DEBUG.format(body, channel, method, properties)}"
+                        f"on_message: {Constants.MESSAGE_RECEIVED_DEBUG.format(body, channel, method, properties)}"
                     )
                 await self.on_message_callback(channel, method, properties, body)
 
             else:
                 if self.log_on_receiving:
-                    self.__logger.info(
-                        RabbitLogMessages.MESSAGE_RECEIVED.format(body, channel)
-                    )
+                    self.__logger.info(Constants.MESSAGE_RECEIVED.format(body, channel))
                     self.__logger.debug(
-                        f"on_message: {RabbitLogMessages.MESSAGE_RECEIVED_DEBUG.format(body, channel, method, properties)}"
+                        f"on_message: {Constants.MESSAGE_RECEIVED_DEBUG.format(body, channel, method, properties)}"
                     )
         except Exception as e:
-            self.__logger.error(RabbitLogMessages.MESSAGE_PROCESSING_ERROR.format(e))
+            self.__logger.error(Constants.MESSAGE_PROCESSING_ERROR.format(e))
             self.__logger.debug(
-                f"on_message: {RabbitLogMessages.MESSAGE_PROCESSING_ERROR_DEBUG.format(body, channel, method, properties, e)}"
+                f"on_message: {Constants.MESSAGE_PROCESSING_ERROR_DEBUG.format(body, channel, method, properties, e)}"
             )
-            raise Error(RabbitLogMessages.MESSAGE_PROCESSING_ERROR.format(e))
+            raise Error(Constants.MESSAGE_PROCESSING_ERROR.format(e))
 
     def send_message(self, message, routing_key="", to_exchange=False):
         """
@@ -372,11 +362,11 @@ class AsyncioRabbitManager:
         """
         try:
             if not self.__connection or not self.__connection.is_open:
-                raise ConnectionError(RabbitLogMessages.CONNECTION_NOT_OPENED)
+                raise ConnectionError(Constants.CONNECTION_NOT_OPENED)
             if not self.__channel or not self.__channel.is_open:
-                raise ConnectionError(RabbitLogMessages.CHANNEL_NOT_OPENED)
+                raise ConnectionError(Constants.CHANNEL_NOT_OPENED)
             if not self.__is_connected:
-                raise ConnectionError(RabbitLogMessages.CONNECTION_NOT_ESTABLISHED)
+                raise ConnectionError(Constants.CONNECTION_NOT_ESTABLISHED)
             message = json.dumps(message)
             routing_key = (
                 self.sending_queue
@@ -394,15 +384,13 @@ class AsyncioRabbitManager:
                 properties=properties,
             )
             if self.log_on_sending:
-                self.__logger.info(
-                    RabbitLogMessages.MESSAGE_SENT.format(message, routing_key)
-                )
+                self.__logger.info(Constants.MESSAGE_SENT.format(message, routing_key))
         except Exception as e:
-            self.__logger.error(RabbitLogMessages.MESSAGE_SENDING_ERROR.format(e))
+            self.__logger.error(Constants.MESSAGE_SENDING_ERROR.format(e))
             self.__logger.debug(
-                f"send_message: {RabbitLogMessages.MESSAGE_SENDING_ERROR_DEBUG.format(message, routing_key, e)}"
+                f"send_message: {Constants.MESSAGE_SENDING_ERROR_DEBUG.format(message, routing_key, e)}"
             )
-            raise Error(RabbitLogMessages.MESSAGE_SEND_FAILED.format(e))
+            raise Error(Constants.MESSAGE_SEND_FAILED.format(e))
 
     async def close_connection(self):
         """
@@ -422,15 +410,15 @@ class AsyncioRabbitManager:
         try:
             if self.__channel and self.__channel.is_open:
                 await self.__channel.close()
-                self.__logger.info(RabbitLogMessages.CHANNEL_CLOSED)
+                self.__logger.info(Constants.CHANNEL_CLOSED)
         except Exception as e:
-            self.__logger.error(RabbitLogMessages.CHANNEL_CLOSING_ERROR.format(e))
+            self.__logger.error(Constants.CHANNEL_CLOSING_ERROR.format(e))
 
         try:
             if self.__connection and self.__connection.is_open:
                 await self.close_connection()
-                self.__logger.info(RabbitLogMessages.CONNECTION_CLOSED)
+                self.__logger.info(Constants.CONNECTION_CLOSED)
         except Exception as e:
-            self.__logger.error(RabbitLogMessages.CONNECTION_CLOSING_ERROR.format(e))
+            self.__logger.error(Constants.CONNECTION_CLOSING_ERROR.format(e))
 
         self.__is_connected = False

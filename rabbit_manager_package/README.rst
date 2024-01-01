@@ -1,5 +1,88 @@
-AsyncioRabbitManager
-====================
+Asyncio Rabbit Manager
+======================
+
+An advanced Python package to asynchronously manage RabbitMQ
+connections, queues, and message handling using asyncio. Ideal for
+high-performance, non-blocking applications.
+
+Features
+--------
+
+-  **Asynchronous Operations**: Utilize the full potential of asyncio
+   for non-blocking message sending and receiving.
+-  **Customizable Logging**: Leverage colored logs for better monitoring
+   and debugging.
+-  **Connection Resilience**: Automatically reconnects in case of
+   connection failures.
+-  **Message Handling**: Send and receive messages asynchronously with
+   optional callbacks.
+-  **Factory Design**: Utilize the factory pattern for creating
+   instances with various configurations.
+
+Installation
+------------
+
+Install the package via pip:
+
+.. code:: bash
+
+   pip install asyncio-rabbit-manager
+
+Usage
+-----
+
+Basic Setup
+~~~~~~~~~~~
+
+First, import the necessary classes:
+
+.. code:: python
+
+   from asyncio_rabbit_manager import AsyncioRabbitManagerFactory, AsyncioRabbitManager
+
+Creating a Manager
+~~~~~~~~~~~~~~~~~~
+
+Use the factory to create an instance of ``AsyncioRabbitManager``:
+
+.. code:: python
+
+   factory = AsyncioRabbitManagerFactory()
+   rabbit_manager = factory.create('<config_file_name>')
+
+Sending Messages
+~~~~~~~~~~~~~~~~
+
+Send messages to a specified queue:
+
+.. code:: python
+
+   rabbit_manager.send_message('Hello, World!', 'my_queue')
+
+Receiving Messages
+~~~~~~~~~~~~~~~~~~
+
+Define a callback for incoming messages and start listening:
+
+.. code:: python
+
+   async def handle_message(channel, method, properties, body):
+       print("Received message:", body)
+
+   rabbit_manager.on_message_callback = handle_message
+   await rabbit_manager.connect()
+
+Closing Connection
+~~~~~~~~~~~~~~~~~~
+
+Properly close the connection when done:
+
+.. code:: python
+
+   await rabbit_manager.close_connection()
+
+Advanced Usage
+--------------
 
 The ``AsyncioRabbitManager`` class provides an asynchronous interface
 for connecting and interacting with RabbitMQ using Python and asyncio.
@@ -8,8 +91,10 @@ processing, this class manages the connection to RabbitMQ, sending and
 receiving messages, and declaring exchanges and queues, all
 asynchronously.
 
+.. _features-1:
+
 Features
---------
+~~~~~~~~
 
 -  **Asynchronous Connection:** Establishes non-blocking connections to
    RabbitMQ, allowing the rest of the application to continue executing
@@ -24,8 +109,10 @@ Features
 -  **Advanced Logging:** Utilizes a customizable logging system to
    monitor activities and quickly diagnose issues.
 
+.. _usage-1:
+
 Usage
------
+~~~~~
 
 Ideal for asyncio-based applications that require efficient and
 asynchronous communication with RabbitMQ. Especially useful in contexts
@@ -33,7 +120,7 @@ where performance and responsiveness are critical, such as in
 microservices, bots, or real-time data processing systems.
 
 Initialization
-~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^
 
 .. code:: python
 
@@ -52,7 +139,7 @@ Initialization
    )
 
 Connecting to RabbitMQ
-~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
@@ -63,8 +150,10 @@ Connecting to RabbitMQ
 
    asyncio.run(main())
 
+.. _sending-messages-1:
+
 Sending Messages
-~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
 .. code:: python
 
@@ -74,8 +163,10 @@ Sending Messages
 
    rabbit_manager.send_message(message, routing_key, to_exchange)
 
+.. _receiving-messages-1:
+
 Receiving Messages
-~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^
 
 Implement your message handling logic in a callback function:
 
@@ -88,7 +179,7 @@ Implement your message handling logic in a callback function:
    rabbit_manager.on_message_callback = message_handler
 
 Closing the Connection
-~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
@@ -97,43 +188,19 @@ Closing the Connection
 
    asyncio.run(close())
 
-Installation
+Contributing
 ------------
 
-Ensure you have ``pika`` and ``asyncio`` installed:
-
-.. code:: shell
-
-   pip install pika asyncio
+Contributions, issues, and feature requests are welcome!
 
 License
 -------
 
-MIT License
+Distributed under the MIT License. See ``LICENSE`` for more information.
 
-Copyright (c) 2023 Massimo Ghiani
+Contact
+-------
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Massimo Ghiani - m.ghiani@gmail.com
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
---------------
-
-This README provides a basic overview and examples for the
-``AsyncioRabbitManager`` class. Adjust the content to fit the specifics
-of your implementation and environment.
+Project Link: https://github.com/m-ghiani/RABBIT_HOLE

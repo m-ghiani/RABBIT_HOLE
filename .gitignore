@@ -225,3 +225,11 @@ rabbit_manager_package/app_config/config.json
 rabbit_manager_package/docs/.DS_Store
 rabbit_manager_package/test_config/test_config.json
 rabbit_manager_package/test_config/test_config.json
+rabbit_manager_package/docs/_build/doctrees/source/modules.doctree
+rabbit_manager_package/docs/_build/doctrees/source/rabbithole.config.doctree
+rabbit_manager_package/docs/_build/doctrees/source/rabbithole.doctree
+rabbit_manager_package/docs/source/modules.rst
+rabbit_manager_package/docs/source/rabbithole.config.rst
+rabbit_manager_package/docs/source/rabbithole.rst
+rabbit_manager_package/.DS_Store
+rabbit_manager_package/README.rst
